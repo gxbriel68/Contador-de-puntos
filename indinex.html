@@ -17,11 +17,10 @@
             min-height: 100vh;
         }
 
-        /* Capa con opacidad para oscurecer y hacer opaco el fondo */
         .overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.3); /* opacidad de la imagen */
+            background-color: rgba(0, 0, 0, 0.3);
             z-index: 0;
         }
 
@@ -43,12 +42,15 @@
             color: #ffcc00;
         }
 
-        input[type="text"] {
+        input[type="text"], input[type="number"] {
             padding: 10px;
             font-size: 16px;
             border-radius: 8px;
             border: none;
             margin-right: 10px;
+        }
+
+        input[type="text"] {
             width: 60%;
         }
 
@@ -63,12 +65,10 @@
             color: #000;
             transition: transform 0.2s ease, background-color 0.2s ease;
         }
-
         button:hover {
             background-color: #ffaa00;
             transform: scale(1.05);
         }
-
         button:active {
             transform: scale(0.95);
         }
@@ -115,7 +115,6 @@
             margin: 8px 0;
         }
 
-        /* Ventana emergente de ayuda que ocupa toda la pantalla */
         .ventana-ayuda {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -177,7 +176,7 @@
 </head>
 <body>
 
-    <div class="overlay"></div> <!-- Capa para opacidad del fondo -->
+    <div class="overlay"></div>
 
     <div class="container">
         <h1>🎲 QUIZMANIAPOINTS!!</h1>
@@ -196,7 +195,6 @@
         <div class="ranking-final" id="rankingFinal"></div>
     </div>
 
-    <!-- Ventana emergente de ayuda que ocupa toda la pantalla -->
     <div id="ventanaAyuda" class="ventana-ayuda" style="display:none;">
         <div class="ventana-ayuda-content">
             <button class="cerrar-btn" onclick="cerrarAyuda()">❌</button>
@@ -206,7 +204,6 @@
         </div>
     </div>
 
-    <!-- Botón flotante para abrir la ayuda -->
     <button id="botonAyuda" class="boton-ayuda" onclick="mostrarAyuda()">📘 Ayuda</button>
 
     <script>
@@ -226,6 +223,15 @@
             actualizarListaJugadores();
         }
 
+        function modificarPuntosDesdeInput(index) {
+            const input = document.getElementById(`inputPuntos${index}`);
+            const puntos = parseInt(input.value, 10);
+            if (isNaN(puntos)) return;
+
+            modificarPuntos(index, puntos);
+            input.value = '';
+        }
+
         function reiniciarPuntos() {
             jugadores.forEach(j => j.puntos = 0);
             actualizarListaJugadores();
@@ -243,8 +249,8 @@
                     <h3>${jugador.nombre}</h3>
                     <div class="puntos">${jugador.puntos} puntos</div>
                     <div>
-                        <button onclick="modificarPuntos(${index}, 4)">+4</button>
-                        <button onclick="modificarPuntos(${index}, -2)">-2</button>
+                        <input type="number" id="inputPuntos${index}" placeholder="Puntos" style="width: 80px; padding: 6px; border-radius: 5px; border: none; margin-right: 6px;" />
+                        <button onclick="modificarPuntosDesdeInput(${index})">Modificar</button>
                     </div>
                 `;
                 lista.appendChild(div);
@@ -273,7 +279,6 @@
             }
         }
 
-        // Mostrar ayuda automáticamente al cargar la página
         window.onload = function () {
             document.getElementById('ventanaAyuda').style.display = 'flex';
         };
