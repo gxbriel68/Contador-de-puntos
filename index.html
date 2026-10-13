@@ -1,0 +1,4436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LA LLUVIA</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #ecfdf5;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ============================================================
+       CARGA, MENÚ, INTRO Y PAUSA
+    ============================================================ */
+
+    #blocker {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(24, 59, 47, 0.55), transparent 42%),
+        linear-gradient(180deg, #020504 0%, #07130d 55%, #000 100%);
+      color: #ecfdf5;
+    }
+
+    #loading-screen,
+    #intro-screen,
+    #pause-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    .hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .venus-orb {
+      position: absolute;
+      width: min(58vw, 680px);
+      aspect-ratio: 1;
+      top: -20vw;
+      right: -12vw;
+      opacity: 0.7;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(184, 255, 211, 0.35), transparent 8%),
+        radial-gradient(circle at 48% 47%, #446855 0%, #203d31 33%, #0b1914 65%, #020403 100%);
+      box-shadow:
+        0 0 80px rgba(74, 222, 128, 0.22),
+        inset -35px -35px 70px rgba(0, 0, 0, 0.9);
+      animation: venusPulse 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes venusPulse {
+      from {
+        transform: scale(0.98);
+        filter: brightness(0.8);
+      }
+
+      to {
+        transform: scale(1.04);
+        filter: brightness(1.15);
+      }
+    }
+
+    .storm-cloud {
+      position: absolute;
+      width: 150%;
+      height: 28%;
+      opacity: 0.9;
+      background: rgba(3, 12, 9, 0.78);
+      filter: blur(28px);
+    }
+
+    .cloud-one {
+      top: 18%;
+      left: -25%;
+      animation: cloudOne 12s linear infinite alternate;
+    }
+
+    .cloud-two {
+      top: 53%;
+      right: -35%;
+      animation: cloudTwo 16s linear infinite alternate;
+    }
+
+    @keyframes cloudOne {
+      from {
+        transform: translateX(-7%) rotate(-8deg);
+      }
+
+      to {
+        transform: translateX(9%) rotate(-8deg);
+      }
+    }
+
+    @keyframes cloudTwo {
+      from {
+        transform: translateX(8%) rotate(6deg);
+      }
+
+      to {
+        transform: translateX(-8%) rotate(6deg);
+      }
+    }
+
+    .lightning-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: rgba(186, 230, 253, 0.18);
+      animation: lightningPulse 7s infinite;
+    }
+
+    @keyframes lightningPulse {
+      0%,
+      89%,
+      91%,
+      100% {
+        opacity: 0;
+      }
+
+      90% {
+        opacity: 0.8;
+      }
+    }
+
+    .loading-content {
+      position: relative;
+      z-index: 2;
+      width: min(90%, 780px);
+      padding: 42px 30px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(3, 14, 10, 0.38), rgba(0, 0, 0, 0.72));
+      border-top: 1px solid rgba(110, 231, 183, 0.35);
+      border-bottom: 1px solid rgba(110, 231, 183, 0.35);
+      box-shadow: 0 0 70px rgba(0, 0, 0, 0.65);
+    }
+
+    .archive-label {
+      margin-bottom: 18px;
+      color: #6ee7b7;
+      font-size: clamp(0.65rem, 1.3vw, 0.85rem);
+      letter-spacing: 0.24em;
+    }
+
+    .loading-content h1 {
+      color: #f0fdf4;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(4rem, 13vw, 9rem);
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      line-height: 0.9;
+      text-indent: 0.14em;
+      text-shadow:
+        0 0 10px rgba(255, 255, 255, 0.26),
+        0 0 35px rgba(52, 211, 153, 0.25);
+    }
+
+    .quote {
+      margin: 28px 0 34px;
+      color: #d1fae5;
+      font-size: clamp(0.9rem, 2vw, 1.15rem);
+      font-style: italic;
+      letter-spacing: 0.05em;
+    }
+
+    .loading-line {
+      width: min(100%, 430px);
+      height: 7px;
+      margin: 0 auto 15px;
+      overflow: hidden;
+      background: rgba(2, 44, 34, 0.8);
+      border: 1px solid rgba(110, 231, 183, 0.55);
+    }
+
+    #loading-progress {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #047857, #6ee7b7, #d1fae5);
+      box-shadow: 0 0 16px #6ee7b7;
+      transition: width 0.16s linear;
+    }
+
+    #loading-text {
+      color: #a7f3d0;
+      font-size: 0.75rem;
+      letter-spacing: 0.14em;
+    }
+
+    .intro-panel {
+      position: relative;
+      z-index: 3;
+      width: min(90%, 760px);
+      padding: 42px;
+      text-align: left;
+      background: rgba(2, 10, 7, 0.9);
+      border: 1px solid rgba(52, 211, 153, 0.55);
+      box-shadow: 0 0 45px rgba(16, 185, 129, 0.18);
+    }
+
+    .intro-panel h2 {
+      margin-bottom: 28px;
+      color: #ecfdf5;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      font-weight: normal;
+      letter-spacing: 0.08em;
+    }
+
+    .intro-panel p {
+      margin-bottom: 16px;
+      color: #c7f9df;
+      font-size: clamp(0.86rem, 1.8vw, 1.04rem);
+      line-height: 1.72;
+    }
+
+    .warning-text {
+      margin-top: 26px !important;
+      color: #fef08a !important;
+      letter-spacing: 0.08em;
+    }
+
+    .ui-button {
+      display: block;
+      width: 100%;
+      margin-top: 30px;
+      padding: 15px 20px;
+      cursor: pointer;
+      color: #ecfdf5;
+      background: rgba(5, 150, 105, 0.18);
+      border: 1px solid #34d399;
+      font-family: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      transition: 0.25s ease;
+    }
+
+    .ui-button:hover {
+      color: #02120b;
+      background: #6ee7b7;
+      box-shadow: 0 0 24px rgba(110, 231, 183, 0.55);
+    }
+
+    /* ============================================================
+       CINEMÁTICA
+    ============================================================ */
+
+    #cinematic-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: #d1fae5;
+      background:
+        radial-gradient(circle at center, rgba(12, 43, 30, 0.35), rgba(0, 0, 0, 0.96) 70%),
+        #000;
+      pointer-events: none;
+      transition: opacity 1.2s ease;
+    }
+
+    #cinematic-noise {
+      position: absolute;
+      inset: -40%;
+      opacity: 0.11;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent 0,
+        transparent 2px,
+        rgba(167, 243, 208, 0.25) 3px,
+        transparent 4px
+      );
+      animation: signalNoise 0.14s steps(2) infinite;
+    }
+
+    @keyframes signalNoise {
+      from {
+        transform: translateY(-2%);
+      }
+
+      to {
+        transform: translateY(2%);
+      }
+    }
+
+    #cinematic-content {
+      position: relative;
+      z-index: 1;
+      width: min(86%, 880px);
+      padding: 40px;
+      text-align: center;
+      border-top: 1px solid rgba(110, 231, 183, 0.45);
+      border-bottom: 1px solid rgba(110, 231, 183, 0.45);
+      text-shadow: 0 0 18px rgba(110, 231, 183, 0.3);
+    }
+
+    #cinematic-label {
+      margin-bottom: 18px;
+      color: #6ee7b7;
+      font-size: 0.78rem;
+      letter-spacing: 0.26em;
+    }
+
+    #cinematic-title {
+      color: #f0fdf4;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.2rem, 7vw, 5.8rem);
+      font-weight: normal;
+      letter-spacing: 0.16em;
+    }
+
+    #cinematic-subtitle {
+      min-height: 2.6em;
+      margin-top: 28px;
+      color: #bbf7d0;
+      font-size: clamp(0.92rem, 2vw, 1.2rem);
+      font-style: italic;
+      line-height: 1.65;
+    }
+
+    /* ============================================================
+       HUD, SUBTÍTULOS, INTERACCIÓN
+    ============================================================ */
+
+    #hud {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .hud-box {
+      max-width: 430px;
+      padding: 12px 20px;
+      color: #ecfdf5;
+      background: rgba(6, 20, 14, 0.85);
+      border: 1px solid #059669;
+      box-shadow: 0 0 15px rgba(5, 150, 105, 0.2);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .bar-bg {
+      width: 250px;
+      height: 16px;
+      margin-top: 6px;
+      overflow: hidden;
+      background: #064e3b;
+      border: 1px solid #10b981;
+    }
+
+    #sanity-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #a5f3fc);
+      transition: width 0.2s ease, background 0.3s ease;
+    }
+
+    #stamina-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #facc15, #fef08a);
+      transition: width 0.12s linear, background 0.25s ease;
+    }
+
+    #story-msg {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      z-index: 10;
+      width: min(85%, 850px);
+      padding: 16px 18px;
+      color: #ecfdf5;
+      background: rgba(4, 12, 8, 0.92);
+      border: 2px solid #10b981;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+      font-size: 1rem;
+      line-height: 1.5;
+      text-align: center;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    #subtitle-box {
+      position: fixed;
+      bottom: 112px;
+      left: 50%;
+      z-index: 50;
+      display: none;
+      width: min(82%, 850px);
+      padding: 14px 20px;
+      color: #f0fdf4;
+      background: rgba(0, 0, 0, 0.72);
+      border-left: 3px solid #6ee7b7;
+      font-size: clamp(0.86rem, 1.8vw, 1.02rem);
+      line-height: 1.55;
+      text-align: center;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    #interaction-prompt {
+      position: absolute;
+      bottom: 180px;
+      left: 50%;
+      z-index: 11;
+      display: none;
+      padding: 12px 18px;
+      color: #fefce8;
+      background: rgba(0, 0, 0, 0.72);
+      border: 1px solid #facc15;
+      font-size: 0.9rem;
+      letter-spacing: 0.07em;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+
+    #impact-flash {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(255, 255, 230, 1) 0%, rgba(251, 146, 60, 0.92) 14%, rgba(220, 38, 38, 0.68) 38%, rgba(0, 0, 0, 0.96) 85%);
+      transition: opacity 0.08s linear;
+    }
+
+    #crash-warning {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 81;
+      display: none;
+      width: min(88%, 700px);
+      padding: 22px;
+      color: #fecaca;
+      background: rgba(69, 10, 10, 0.58);
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 42px rgba(239, 68, 68, 0.7);
+      font-size: clamp(1.4rem, 4vw, 3.4rem);
+      font-weight: bold;
+      letter-spacing: 0.15em;
+      text-align: center;
+      text-shadow: 0 0 18px #ef4444;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    #crash-warning small {
+      display: block;
+      margin-top: 13px;
+      color: #fee2e2;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+    }
+
+    #hallucination-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 35%, rgba(2, 8, 6, 0.72) 100%),
+        repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(96, 165, 250, 0.06) 4px, transparent 5px);
+      transition: opacity 0.7s ease;
+    }
+
+    #hallucination-face {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 71;
+      display: none;
+      width: min(45vw, 420px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 38% 34%, rgba(190, 242, 255, 0.22), transparent 18%),
+        radial-gradient(circle at 50% 50%, rgba(8, 20, 16, 0.96), rgba(0, 0, 0, 0.98));
+      box-shadow: 0 0 80px rgba(96, 165, 250, 0.28), inset 0 0 60px rgba(0, 0, 0, 0.95);
+    }
+
+    #hallucination-face::before,
+    #hallucination-face::after {
+      content: "";
+      position: absolute;
+      top: 38%;
+      width: 16%;
+      height: 7%;
+      border-radius: 50%;
+      background: rgba(125, 211, 252, 0.8);
+      box-shadow: 0 0 22px rgba(125, 211, 252, 0.9);
+    }
+
+    #hallucination-face::before { left: 28%; }
+    #hallucination-face::after { right: 28%; }
+
+    #storm-warning {
+      position: fixed;
+      top: 42%;
+      left: 50%;
+      z-index: 82;
+      display: none;
+      width: min(88%, 760px);
+      padding: 20px;
+      color: #bae6fd;
+      background: rgba(3, 18, 28, 0.72);
+      border: 2px solid #38bdf8;
+      box-shadow: 0 0 48px rgba(56, 189, 248, 0.6);
+      font-size: clamp(1.2rem, 3.4vw, 2.6rem);
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      text-align: center;
+      text-shadow: 0 0 20px #38bdf8;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    #storm-warning small {
+      display: block;
+      margin-top: 10px;
+      color: #e0f2fe;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+    }
+
+    #compass{position:fixed;bottom:24px;right:24px;z-index:60;width:190px;padding:14px 14px 12px;color:#ecfdf5;background:linear-gradient(180deg,rgba(4,18,12,.94),rgba(0,0,0,.94));border:1px solid rgba(16,185,129,.75);border-radius:14px;box-shadow:0 0 24px rgba(16,185,129,.22),inset 0 0 22px rgba(0,0,0,.7);text-align:center;pointer-events:none}
+    #compass-label{font-size:.6rem;letter-spacing:.22em;color:#6ee7b7}
+    #compass-ring{position:relative;width:118px;height:118px;margin:10px auto 8px;border-radius:50%;border:2px solid rgba(110,231,183,.45);background:radial-gradient(circle at 50% 50%,rgba(6,78,59,.55),rgba(0,0,0,.86));box-shadow:inset 0 0 18px rgba(0,0,0,.85),0 0 18px rgba(16,185,129,.16);overflow:hidden}
+    #compass-ring::before{content:"";position:absolute;inset:10px;border-radius:50%;border:1px dashed rgba(110,231,183,.28)}
+    .compass-cardinal{position:absolute;font-size:.58rem;font-weight:bold;letter-spacing:.08em;color:rgba(209,250,229,.75);transform:translate(-50%,-50%)}
+    .compass-cardinal.north{top:11px;left:50%;color:#6ee7b7}
+    .compass-cardinal.south{bottom:11px;left:50%}
+    .compass-cardinal.west{top:50%;left:12px}
+    .compass-cardinal.east{top:50%;right:12px}
+    #compass-arrow{position:absolute;top:50%;left:50%;width:54px;height:54px;transform:translate(-50%,-50%);transform-origin:50% 50%;pointer-events:none}
+    #compass-arrow svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(110,231,183,.85))}
+    #compass-arrow.compass-danger svg{filter:drop-shadow(0 0 12px rgba(239,68,68,.95));animation:compassEmergency .55s steps(2,end) infinite}
+    @keyframes compassEmergency{0%,100%{opacity:1}50%{opacity:.28}}
+    #compass-distance{font-size:.72rem;letter-spacing:.08em;color:#d1fae5}
+    #compass-target{margin-top:5px;font-size:.6rem;letter-spacing:.12em;color:#fde68a}
+    /* ============================================================
+       PANEL DE TRIPULACIÓN
+    ============================================================ */
+
+    #crew-panel {
+      position: fixed;
+      bottom: 24px;
+      left: 20px;
+      z-index: 60;
+      width: 250px;
+      padding: 12px;
+      background: rgba(4, 12, 8, 0.88);
+      border: 1px solid #10b981;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.22);
+      pointer-events: none;
+    }
+
+    #crew-panel h3 {
+      margin-bottom: 10px;
+      color: #6ee7b7;
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-align: center;
+    }
+
+    .crew-member {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .crew-photo {
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 2px solid #6ee7b7;
+      color: #04120c;
+      font-weight: bold;
+      font-size: 1rem;
+      background: #a7f3d0;
+    }
+
+    .crew-info { flex: 1; }
+
+    .crew-name {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+      color: #ecfdf5;
+    }
+
+    .crew-bar-bg {
+      height: 9px;
+      width: 100%;
+      overflow: hidden;
+      background: #064e3b;
+      border: 1px solid #10b981;
+    }
+
+    .crew-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #38bdf8, #a5f3fc);
+      transition: width 0.25s ease, background 0.3s ease;
+    }
+
+    .crew-member.dead .crew-photo {
+      border-color: #ef4444;
+      background: #7f1d1d;
+      color: #fecaca;
+      filter: grayscale(1);
+    }
+
+    .crew-member.dead .crew-name {
+      color: #fca5a5;
+      text-decoration: line-through;
+    }
+
+    .crew-member.dead .crew-bar {
+      width: 0% !important;
+      background: #dc2626 !important;
+    }
+
+    #retry-mission-btn {
+      display: inline-block;
+      margin-top: 28px;
+      padding: 14px 34px;
+      cursor: pointer;
+      color: #ecfdf5;
+      background: rgba(5, 150, 105, 0.18);
+      border: 1px solid #34d399;
+      font-family: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      transition: 0.25s ease;
+      pointer-events: auto;
+    }
+
+    #retry-mission-btn:hover {
+      color: #02120b;
+      background: #6ee7b7;
+      box-shadow: 0 0 24px rgba(110, 231, 183, 0.55);
+    }
+
+
+    /* ============================================================
+       MUERTE Y VICTORIA
+    ============================================================ */
+
+    #death-overlay,
+    #victory-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 25px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #death-overlay {
+      color: #fca5a5;
+      background: radial-gradient(circle, rgba(153, 27, 27, 0.4), rgba(0, 0, 0, 0.95) 80%);
+      animation: pulseDeath 1.5s infinite alternate;
+    }
+
+    #victory-overlay {
+      color: #fef9c3;
+      background: radial-gradient(circle, rgba(250, 204, 21, 0.32), rgba(18, 22, 8, 0.92) 76%);
+    }
+
+    @keyframes pulseDeath {
+      from {
+        opacity: 0.7;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    #death-overlay h1,
+    #victory-overlay h1 {
+      margin-bottom: 20px;
+      font-size: clamp(2.4rem, 7vw, 4.4rem);
+      letter-spacing: 0.14em;
+    }
+
+    #death-overlay h1 {
+      color: #ef4444;
+      text-shadow: 0 0 20px #dc2626;
+    }
+
+    #victory-overlay h1 {
+      color: #fef08a;
+      text-shadow: 0 0 24px #facc15;
+    }
+
+    #death-overlay p,
+    #victory-overlay p {
+      max-width: 720px;
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 700px) {
+      #hud {
+        gap: 8px;
+        flex-direction: column;
+      }
+
+      .hud-box {
+        max-width: 100%;
+      }
+
+      .bar-bg {
+        width: 100%;
+      }
+
+      #story-msg {
+        bottom: 14px;
+        width: 92%;
+        font-size: 0.82rem;
+      }
+
+      #subtitle-box {
+        bottom: 104px;
+        width: 90%;
+      }
+
+      #interaction-prompt {
+        bottom: 170px;
+        width: 85%;
+        text-align: center;
+      }
+
+      .intro-panel {
+        padding: 28px 22px;
+      }
+
+      .loading-content {
+        padding: 34px 18px;
+      }
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body>
+  <!-- CARGA / MENÚ -->
+  <div id="blocker">
+    <div class="venus-orb"></div>
+    <div class="storm-cloud cloud-one"></div>
+    <div class="storm-cloud cloud-two"></div>
+    <div class="lightning-flash"></div>
+
+    <div id="loading-screen">
+      <div class="loading-content">
+        <p class="archive-label">ARCHIVO DE MISIÓN 07 · EXPEDICIÓN VENUS</p>
+        <h1>LA LLUVIA</h1>
+        <p class="quote">"En Venus nunca deja de llover."</p>
+
+        <div class="loading-line">
+          <div id="loading-progress"></div>
+        </div>
+
+        <p id="loading-text">ESTABLECIENDO ENLACE CON LA NAVE...</p>
+      </div>
+    </div>
+
+    <div id="intro-screen" class="hidden">
+      <div class="intro-panel">
+        <p class="archive-label">TRANSMISIÓN PREVIA AL DESCENSO</p>
+        <h2>ICARUS-7 · ÓRBITA DE VENUS</h2>
+
+        <p>
+          Año 2247. La humanidad mantiene una red limitada de cúpulas solares:
+          refugios artificiales en un planeta donde la lluvia no se detiene.
+        </p>
+
+        <p>
+          La Icarus-7 transporta personal, suministros y equipos de reparación
+          hacia el continente occidental.
+        </p>
+
+        <p>
+          Usted es el coronel al mando. Una perturbación eléctrica acaba de
+          interferir con los sistemas de navegación.
+        </p>
+
+        <p class="warning-text">DIRECTIVA: DIRÍJASE AL PUENTE DE MANDO.</p>
+
+        <button id="start-game-btn" class="ui-button">
+          INICIAR DESCENSO
+        </button>
+      </div>
+    </div>
+
+    <div id="pause-screen" class="hidden">
+      <div class="intro-panel">
+        <p class="archive-label">SISTEMA PAUSADO</p>
+        <h2>PAUSA DE MISIÓN</h2>
+
+        <p>
+          La Icarus-7 continúa descendiendo. Restablece el control para volver
+          a la misión.
+        </p>
+
+        <button id="resume-game-btn" class="ui-button">
+          CONTINUAR DESCENSO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CINEMÁTICA -->
+  <div id="cinematic-overlay">
+    <div id="cinematic-noise"></div>
+
+    <div id="cinematic-content">
+      <p id="cinematic-label">TRANSMISIÓN ENTRANTE</p>
+      <h2 id="cinematic-title">ARCHIVO VENUS // 07</h2>
+      <p id="cinematic-subtitle"></p>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hud-box">
+      <div id="character-status">ESTADO DEL CORONEL:</div>
+      <div class="bar-bg">
+        <div id="sanity-bar"></div>
+      </div>
+    </div>
+
+    <div class="hud-box" id="stamina-hud">
+      <div>RESISTENCIA:</div>
+      <div class="bar-bg">
+        <div id="stamina-bar"></div>
+      </div>
+    </div>
+
+    <div class="hud-box" id="objective-text">
+      OBJETIVO: DIRÍGETE AL PUENTE DE MANDO.
+    </div>
+  </div>
+
+  <!-- PANEL DE TRIPULACIÓN -->
+  <div id="crew-panel">
+    <h3>TRIPULACIÓN ICARUS-7</h3>
+
+    <div class="crew-member" id="crew-0">
+      <div class="crew-photo" style="background:#7dd3fc;">S</div>
+      <div class="crew-info">
+        <div class="crew-name">SIMMONS</div>
+        <div class="crew-bar-bg"><div class="crew-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="crew-member" id="crew-1">
+      <div class="crew-photo" style="background:#d8b4fe;">P</div>
+      <div class="crew-info">
+        <div class="crew-name">PICKARD</div>
+        <div class="crew-bar-bg"><div class="crew-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="crew-member" id="crew-2">
+      <div class="crew-photo" style="background:#fde68a;">V</div>
+      <div class="crew-info">
+        <div class="crew-name">VARGAS</div>
+        <div class="crew-bar-bg"><div class="crew-bar"></div></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="interaction-prompt">
+    [E] USAR CONSOLA DE NAVEGACIÓN
+  </div>
+
+  <div id="subtitle-box"></div>
+
+  <div id="story-msg">
+    [ICARUS-7 · DESCENSO A VENUS] El sistema de navegación presenta interferencias.
+  </div>
+
+  <div id="impact-flash"></div>
+
+  <div id="crash-warning">
+    <div>IMPACTO INMINENTE</div>
+    <small>SUJÉTENSE · PÉRDIDA TOTAL DE CONTROL</small>
+  </div>
+
+  <div id="hallucination-overlay"></div>
+  <div id="hallucination-face"></div>
+
+  <div id="storm-warning">
+    <div>LA TORMENTA TE HA VISTO</div>
+    <small>NO TE DETENGAS</small>
+  </div>
+
+  <div id="compass">
+    <div id="compass-label">BRÚJULA DE MISIÓN</div>
+    <div id="compass-ring">
+      <span class="compass-cardinal north">N</span>
+      <span class="compass-cardinal south">S</span>
+      <span class="compass-cardinal west">O</span>
+      <span class="compass-cardinal east">E</span>
+      <div id="compass-arrow">
+        <svg viewBox="0 0 100 100">
+          <polygon points="50,6 72,58 50,46 28,58" fill="#6ee7b7" />
+          <polygon points="50,94 38,58 50,66 62,58" fill="rgba(148,163,184,0.55)" />
+          <circle cx="50" cy="50" r="7" fill="#022c22" stroke="#6ee7b7" stroke-width="3" />
+        </svg>
+      </div>
+    </div>
+    <div id="compass-distance">DISTANCIA: ---</div>
+    <div id="compass-target">OBJETIVO: ---</div>
+  </div>
+
+  <!-- MUERTE -->
+  <div id="death-overlay">
+    <h1>HAS ENLOQUECIDO</h1>
+    <p id="death-cause">
+      El agua de Venus perforó tus pensamientos. Te ahogaste bajo la lluvia incesante.
+    </p>
+
+    <button id="retry-mission-btn" onclick="location.reload()">
+      REINICIAR MISIÓN
+    </button>
+  </div>
+
+  <!-- VICTORIA -->
+  <div id="victory-overlay">
+    <h1>LA CÚPULA SOLAR</h1>
+    <p>
+      La puerta se cierra. Por primera vez, la lluvia es solo un recuerdo.
+      Arriba, un sol artificial arde silencioso, amarillo y cálido.
+    </p>
+  </div>
+
+  <script>
+    /* ============================================================
+       REFERENCIAS DOM
+    ============================================================ */
+
+    const blocker = document.getElementById("blocker");
+    const loadingScreen = document.getElementById("loading-screen");
+    const introScreen = document.getElementById("intro-screen");
+    const pauseScreen = document.getElementById("pause-screen");
+    const loadingProgress = document.getElementById("loading-progress");
+    const loadingText = document.getElementById("loading-text");
+    const startGameBtn = document.getElementById("start-game-btn");
+    const resumeGameBtn = document.getElementById("resume-game-btn");
+
+    const cinematicOverlay = document.getElementById("cinematic-overlay");
+    const cinematicTitle = document.getElementById("cinematic-title");
+    const cinematicSubtitle = document.getElementById("cinematic-subtitle");
+
+    const storyMsg = document.getElementById("story-msg");
+    const objectiveText = document.getElementById("objective-text");
+    const characterStatus = document.getElementById("character-status");
+    const interactionPrompt = document.getElementById("interaction-prompt");
+    const sanityBar = document.getElementById("sanity-bar");
+    const subtitleBox = document.getElementById("subtitle-box");
+    const deathOverlay = document.getElementById("death-overlay");
+    const deathCause = document.getElementById("death-cause");
+    const victoryOverlay = document.getElementById("victory-overlay");
+    const staminaBar = document.getElementById("stamina-bar");
+    const impactFlash = document.getElementById("impact-flash");
+    const crashWarning = document.getElementById("crash-warning");
+    const hallucinationOverlay = document.getElementById("hallucination-overlay");
+    const hallucinationFace = document.getElementById("hallucination-face");
+    const stormWarning = document.getElementById("storm-warning");
+    const compassArrow = document.getElementById("compass-arrow");
+    const compassDistance = document.getElementById("compass-distance");
+    const compassTarget = document.getElementById("compass-target");
+    const retryMissionBtn = document.getElementById("retry-mission-btn");
+
+    /* ============================================================
+       AUDIO
+    ============================================================ */
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+    let audioCtx = null;
+
+    let rainNoiseNode = null;
+    let rainGainNode = null;
+
+    let engineNoiseNode = null;
+    let engineGainNode = null;
+
+    let ventilationNoiseNode = null;
+    let ventilationGainNode = null;
+
+    let musicOscillator = null;
+    let musicGainNode = null;
+    let musicFilterNode = null;
+
+    let ambientDroneOscillator = null;
+    let ambientDroneGainNode = null;
+
+    let tensionOscillator = null;
+    let tensionGainNode = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioCtx();
+      }
+    }
+
+    function resumeAudio() {
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function createLoopingNoise(filterFrequency, volume, filterType = "lowpass") {
+      if (!audioCtx) return null;
+
+      const bufferSize = audioCtx.sampleRate * 2;
+      const buffer = audioCtx.createBuffer(
+        1,
+        bufferSize,
+        audioCtx.sampleRate
+      );
+
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const source = audioCtx.createBufferSource();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+
+      source.buffer = buffer;
+      source.loop = true;
+
+      filter.type = filterType;
+      filter.frequency.value = filterFrequency;
+
+      gain.gain.value = volume;
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      source.start();
+
+      return { source, gain };
+    }
+
+    function startShipAmbience() {
+      if (!audioCtx || engineNoiseNode) return;
+
+      const engine = createLoopingNoise(120, 0.055, "lowpass");
+      const ventilation = createLoopingNoise(1100, 0.018, "bandpass");
+
+      if (engine) {
+        engineNoiseNode = engine.source;
+        engineGainNode = engine.gain;
+      }
+
+      if (ventilation) {
+        ventilationNoiseNode = ventilation.source;
+        ventilationGainNode = ventilation.gain;
+      }
+    }
+
+    function fadeShipAmbience() {
+      if (!audioCtx) return;
+
+      if (engineGainNode) {
+        engineGainNode.gain.linearRampToValueAtTime(
+          0.001,
+          audioCtx.currentTime + 1.2
+        );
+      }
+
+      if (ventilationGainNode) {
+        ventilationGainNode.gain.linearRampToValueAtTime(
+          0.001,
+          audioCtx.currentTime + 1.2
+        );
+      }
+    }
+
+    function startRainSound() {
+      if (!audioCtx || rainNoiseNode) return;
+
+      const rain = createLoopingNoise(1450, 0.16, "lowpass");
+
+      if (rain) {
+        rainNoiseNode = rain.source;
+        rainGainNode = rain.gain;
+      }
+    }
+
+    function setRainVolume(value) {
+      if (!rainGainNode || !audioCtx) return;
+
+      rainGainNode.gain.linearRampToValueAtTime(
+        value,
+        audioCtx.currentTime + 0.25
+      );
+    }
+
+    function startShipMusic() {
+      if (!audioCtx || musicOscillator) return;
+
+      musicOscillator = audioCtx.createOscillator();
+      musicGainNode = audioCtx.createGain();
+      musicFilterNode = audioCtx.createBiquadFilter();
+
+      musicOscillator.type = "sine";
+      musicOscillator.frequency.value = 54;
+
+      musicFilterNode.type = "lowpass";
+      musicFilterNode.frequency.value = 230;
+
+      musicGainNode.gain.value = 0.016;
+
+      musicOscillator.connect(musicFilterNode);
+      musicFilterNode.connect(musicGainNode);
+      musicGainNode.connect(audioCtx.destination);
+
+      musicOscillator.start();
+    }
+
+    function fadeOutShipMusic() {
+      if (!audioCtx || !musicGainNode) return;
+
+      musicGainNode.gain.linearRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 1.4
+      );
+    }
+
+    function startVenusAmbienceMusic() {
+      if (!audioCtx || ambientDroneOscillator) return;
+
+      ambientDroneOscillator = audioCtx.createOscillator();
+      ambientDroneGainNode = audioCtx.createGain();
+
+      const tremolo = audioCtx.createOscillator();
+      const tremoloGain = audioCtx.createGain();
+
+      ambientDroneOscillator.type = "triangle";
+      ambientDroneOscillator.frequency.value = 43;
+
+      tremolo.type = "sine";
+      tremolo.frequency.value = 0.075;
+      tremoloGain.gain.value = 0.012;
+
+      ambientDroneGainNode.gain.value = 0.022;
+
+      tremolo.connect(tremoloGain);
+      tremoloGain.connect(ambientDroneGainNode.gain);
+
+      ambientDroneOscillator.connect(ambientDroneGainNode);
+      ambientDroneGainNode.connect(audioCtx.destination);
+
+      tremolo.start();
+      ambientDroneOscillator.start();
+    }
+
+    function startTensionMusic() {
+      if (!audioCtx || tensionOscillator) return;
+
+      tensionOscillator = audioCtx.createOscillator();
+      tensionGainNode = audioCtx.createGain();
+
+      tensionOscillator.type = "sawtooth";
+      tensionOscillator.frequency.value = 78;
+      tensionGainNode.gain.value = 0.001;
+
+      tensionOscillator.connect(tensionGainNode);
+      tensionGainNode.connect(audioCtx.destination);
+
+      tensionOscillator.start();
+    }
+
+    function setTensionLevel(level) {
+      if (!audioCtx || !tensionGainNode || !tensionOscillator) return;
+
+      const normalized = Math.max(0, Math.min(1, level));
+
+      tensionGainNode.gain.linearRampToValueAtTime(
+        0.002 + normalized * 0.022,
+        audioCtx.currentTime + 0.4
+      );
+
+      tensionOscillator.frequency.linearRampToValueAtTime(
+        78 + normalized * 46,
+        audioCtx.currentTime + 0.4
+      );
+    }
+
+    function playAlarmSound() {
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(
+        880,
+        audioCtx.currentTime + 0.42
+      );
+
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 0.42
+      );
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.42);
+    }
+
+    function playThunderSound() {
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(
+        26,
+        audioCtx.currentTime + 1.3
+      );
+
+      gain.gain.setValueAtTime(0.34, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 1.3
+      );
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.3);
+    }
+
+
+
+    function playExplosionSound() {
+      if (!audioCtx) return;
+      const duration = 1.8;
+      const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * duration), audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const progress = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - progress, 3);
+      }
+      const source = audioCtx.createBufferSource();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+      source.buffer = buffer;
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(900, audioCtx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(65, audioCtx.currentTime + duration);
+      gain.gain.setValueAtTime(0.95, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      source.start();
+    }
+
+    function triggerImpactFlash() {
+      impactFlash.style.opacity = "1";
+      setTimeout(() => { impactFlash.style.opacity = "0.75"; }, 90);
+      setTimeout(() => { impactFlash.style.opacity = "0"; }, 350);
+    }
+
+    function playDeathSound() {
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(280, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(
+        42,
+        audioCtx.currentTime + 2.2
+      );
+
+      gain.gain.setValueAtTime(0.32, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 2.2
+      );
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 2.2);
+    }
+
+    function playFootstep(surface) {
+      if (!audioCtx) return;
+
+      const isMetal = surface === "metal";
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = isMetal ? "square" : "triangle";
+
+      osc.frequency.setValueAtTime(
+        isMetal ? 105 : 72,
+        audioCtx.currentTime
+      );
+
+      osc.frequency.exponentialRampToValueAtTime(
+        isMetal ? 48 : 28,
+        audioCtx.currentTime + 0.11
+      );
+
+      filter.type = isMetal ? "bandpass" : "lowpass";
+      filter.frequency.value = isMetal ? 700 : 340;
+
+      gain.gain.setValueAtTime(
+        isMetal ? 0.038 : 0.06,
+        audioCtx.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 0.14
+      );
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.14);
+    }
+
+    function playMetalCreak() {
+      if (!audioCtx) return;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = "sawtooth";
+
+      osc.frequency.setValueAtTime(
+        95 + Math.random() * 55,
+        audioCtx.currentTime
+      );
+
+      osc.frequency.exponentialRampToValueAtTime(
+        26,
+        audioCtx.currentTime + 1.2
+      );
+
+      filter.type = "bandpass";
+      filter.frequency.value = 380 + Math.random() * 280;
+
+      gain.gain.setValueAtTime(0.025, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + 1.2
+      );
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    }
+
+    function playRadioStatic() {
+      if (!audioCtx) return;
+
+      const buffer = audioCtx.createBuffer(
+        1,
+        Math.floor(audioCtx.sampleRate * 0.22),
+        audioCtx.sampleRate
+      );
+
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.75;
+      }
+
+      const source = audioCtx.createBufferSource();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      source.buffer = buffer;
+
+      filter.type = "bandpass";
+      filter.frequency.value = 1700;
+
+      gain.gain.value = 0.05;
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      source.start();
+    }
+
+    /* ============================================================
+       VOCES Y COLA DE DIÁLOGOS
+    ============================================================ */
+
+    let availableVoices = [];
+    let subtitleTimer = null;
+
+    const dialogueQueue = [];
+    let dialoguePlaying = false;
+    let currentUtterance = null;
+
+    function loadSpanishVoices() {
+      if (!("speechSynthesis" in window)) return;
+
+      availableVoices = window.speechSynthesis
+        .getVoices()
+        .filter((voice) =>
+          voice.lang.toLowerCase().startsWith("es")
+        );
+    }
+
+    if ("speechSynthesis" in window) {
+      loadSpanishVoices();
+      window.speechSynthesis.onvoiceschanged = loadSpanishVoices;
+    }
+
+    function findVoice(hints = []) {
+      if (!availableVoices.length) return null;
+
+      const voice = availableVoices.find((item) => {
+        const name = item.name.toLowerCase();
+
+        return hints.some((hint) =>
+          name.includes(hint.toLowerCase())
+        );
+      });
+
+      return voice || availableVoices[0];
+    }
+
+    function showSubtitle(speaker, text) {
+      subtitleBox.innerHTML = `<strong>${speaker}:</strong> ${text}`;
+      subtitleBox.style.display = "block";
+    }
+
+    function hideSubtitle() {
+      clearTimeout(subtitleTimer);
+      subtitleBox.style.display = "none";
+    }
+
+    function estimatedSpeechDuration(text, rate = 1) {
+      const words = text.trim().split(/\s+/).length;
+      const baseMilliseconds = words * 460;
+
+      return Math.max(1800, baseMilliseconds / rate + 700);
+    }
+
+    function enqueueDialogue({
+      speaker = "NARRADOR",
+      text,
+      rate = 0.93,
+      pitch = 1,
+      volume = 0.8,
+      hints = [],
+      pauseAfter = 450,
+      priority = false
+    }) {
+      const dialogue = {
+        speaker,
+        text,
+        rate,
+        pitch,
+        volume,
+        hints,
+        pauseAfter
+      };
+
+      if (priority) {
+        dialogueQueue.unshift(dialogue);
+      } else {
+        dialogueQueue.push(dialogue);
+      }
+
+      processDialogueQueue();
+    }
+
+    function processDialogueQueue() {
+      if (dialoguePlaying || dialogueQueue.length === 0) return;
+
+      const dialogue = dialogueQueue.shift();
+      dialoguePlaying = true;
+
+      showSubtitle(dialogue.speaker, dialogue.text);
+
+      const fallbackDuration = estimatedSpeechDuration(
+        dialogue.text,
+        dialogue.rate
+      );
+
+      if (!("speechSynthesis" in window)) {
+        subtitleTimer = setTimeout(() => {
+          hideSubtitle();
+          dialoguePlaying = false;
+
+          setTimeout(
+            processDialogueQueue,
+            dialogue.pauseAfter
+          );
+        }, fallbackDuration);
+
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(
+        dialogue.text
+      );
+
+      const selectedVoice = findVoice(dialogue.hints);
+
+      utterance.lang = "es-ES";
+      utterance.rate = dialogue.rate;
+      utterance.pitch = dialogue.pitch;
+      utterance.volume = dialogue.volume;
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
+      }
+
+      currentUtterance = utterance;
+
+      utterance.onend = () => {
+        currentUtterance = null;
+        hideSubtitle();
+        dialoguePlaying = false;
+
+        setTimeout(
+          processDialogueQueue,
+          dialogue.pauseAfter
+        );
+      };
+
+      utterance.onerror = () => {
+        currentUtterance = null;
+        hideSubtitle();
+        dialoguePlaying = false;
+
+        setTimeout(
+          processDialogueQueue,
+          dialogue.pauseAfter
+        );
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function clearDialogueQueue() {
+      dialogueQueue.length = 0;
+      dialoguePlaying = false;
+      currentUtterance = null;
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+
+      hideSubtitle();
+    }
+
+    /* ============================================================
+       THREE.JS: ESCENA Y CÁMARA
+    ============================================================ */
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020805);
+    scene.fog = new THREE.FogExp2(0x020805, 0.014);
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: "high-performance"
+    });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio, 2)
+    );
+
+    document.body.appendChild(renderer.domElement);
+
+    const cameraRig = new THREE.Group();
+
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      2000
+    );
+
+    camera.position.set(0, 1.7, 0);
+    cameraRig.add(camera);
+    scene.add(cameraRig);
+
+    const clock = new THREE.Clock();
+
+    scene.add(new THREE.AmbientLight(0x14281d, 0.75));
+
+    const alarmLight = new THREE.PointLight(
+      0xef4444,
+      0,
+      30
+    );
+
+    alarmLight.position.set(0, 4.2, -29);
+    scene.add(alarmLight);
+
+    const venusAmbient = new THREE.HemisphereLight(
+      0x7dd3fc,
+      0x07110d,
+      0.4
+    );
+
+    venusAmbient.visible = false;
+    scene.add(venusAmbient);
+
+    /* ============================================================
+       ESTADO DEL JUEGO
+    ============================================================ */
+
+    let stage = "SHIP";
+    let gameHasStarted = false;
+    let isLocked = false;
+    let isDead = false;
+    let isWon = false;
+    let crashStarted = false;
+
+    let sanity = 100;
+    let yaw = 0;
+    let pitch = 0;
+
+    let moveForward = false;
+    let moveBackward = false;
+    let moveLeft = false;
+    let moveRight = false;
+
+    let alarmTimer = 0;
+    let missionTime = 0;
+    let shakeStrength = 0;
+    let thunderTimer = 0;
+    let footstepTimer = 0;
+    let visitedDome1 = false;
+    let stamina = 100;
+    let isSprinting = false;
+    let crashSequenceFinished = false;
+    let hallucinationTimer = 12;
+    let hallucinationActive = false;
+    let hallucinationCooldown = 0;
+
+    let stormEventStarted = false;
+    let stormChaseActive = false;
+    let stormChaseFinished = false;
+    let stormChaseStartZ = 0;
+    let stormChaseDistance = 180;
+    let stormLightningTimer = 0;
+    let stormProximity = 0;
+    let stormAttackTimer = 0;
+    let companionLaunched = false;
+    let launchedCompanion = null;
+    let cinematicFocusTarget = null;
+
+    const SAFE_STORM_DISTANCE = 110;
+    const STORM_ATTACK_DELAY = 14;
+    const FALSE_DOME_TRIGGER_DISTANCE = 160;
+    const FALSE_DOME_ARRIVAL_DISTANCE = 60;
+    let stormCheckpoint = null;
+    let stormCinematicActive = false;
+    let enteredFinalDome = false;
+    let finalDomeDialogueStarted = false;
+    let finalDomeApproachDialogueStarted = false;
+    let activeCamera = null;
+    activeCamera = camera;
+
+    let currentObjective = {
+      x: 0,
+      z: -900,
+      label: "CÚPULA SOLAR"
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function distance2D(ax, az, bx, bz) {
+      return Math.hypot(ax - bx, az - bz);
+    }
+
+    function setStoryMessage(text) {
+      storyMsg.innerText = text;
+    }
+
+    function setObjective(text) {
+      objectiveText.innerText = text;
+    }
+
+    function updateSanityUI() {
+      sanity = clamp(sanity, 0, 100);
+      sanityBar.style.width = sanity + "%";
+
+      if (sanity > 55) {
+        sanityBar.style.background =
+          "linear-gradient(90deg, #38bdf8, #a5f3fc)";
+      } else if (sanity > 25) {
+        sanityBar.style.background =
+          "linear-gradient(90deg, #facc15, #fde68a)";
+      } else {
+        sanityBar.style.background =
+          "linear-gradient(90deg, #dc2626, #fca5a5)";
+      }
+    }
+
+
+
+    function updateStaminaUI() {
+      stamina = clamp(stamina, 0, 100);
+      staminaBar.style.width = stamina + "%";
+
+      if (stamina > 45) {
+        staminaBar.style.background = "linear-gradient(90deg, #facc15, #fef08a)";
+      } else if (stamina > 15) {
+        staminaBar.style.background = "linear-gradient(90deg, #fb923c, #fdba74)";
+      } else {
+        staminaBar.style.background = "linear-gradient(90deg, #dc2626, #fca5a5)";
+      }
+    }
+
+    const crewSanity = [100, 100, 100];
+    let simmonsEventStarted = false;
+    let pickardFarewellStarted = false;
+    let pickardSuicideStarted = false;
+
+    function updateCrewUI() {
+      companions.forEach((companion, index) => {
+        const member = document.getElementById("crew-" + index);
+        if (!member) return;
+
+        const bar = member.querySelector(".crew-bar");
+
+        if (!companion.alive) {
+          member.classList.add("dead");
+          if (bar) bar.style.width = "0%";
+          return;
+        }
+
+        crewSanity[index] = sanity;
+
+        const value = clamp(crewSanity[index], 0, 100);
+
+        if (bar) {
+          bar.style.width = value + "%";
+
+          if (value > 55) {
+            bar.style.background =
+              "linear-gradient(90deg, #38bdf8, #a5f3fc)";
+          } else if (value > 25) {
+            bar.style.background =
+              "linear-gradient(90deg, #facc15, #fde68a)";
+          } else {
+            bar.style.background =
+              "linear-gradient(90deg, #dc2626, #fca5a5)";
+          }
+        }
+      });
+    }
+
+    function playGunshotSound() {
+      if (!audioCtx) return;
+
+      const duration = 0.28;
+      const buffer = audioCtx.createBuffer(
+        1,
+        Math.floor(audioCtx.sampleRate * duration),
+        audioCtx.sampleRate
+      );
+
+      const data = buffer.getChannelData(0);
+
+      for (let i = 0; i < data.length; i++) {
+        const progress = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - progress, 5);
+      }
+
+      const source = audioCtx.createBufferSource();
+      const filter = audioCtx.createBiquadFilter();
+      const gain = audioCtx.createGain();
+
+      source.buffer = buffer;
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(2400, audioCtx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(
+        180,
+        audioCtx.currentTime + duration
+      );
+
+      gain.gain.setValueAtTime(0.75, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioCtx.currentTime + duration
+      );
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      source.start();
+    }
+
+    function animateCompanionShot(index, storyText, dialogue) {
+      const victim = companions[index];
+
+      if (!victim || !victim.alive) return;
+
+      victim.alive = false;
+      sanity -= index === 0 ? 10 : 15;
+      updateSanityUI();
+      updateCrewUI();
+
+      setStoryMessage(storyText);
+
+      if (dialogue) {
+        enqueueDialogue(dialogue);
+      }
+
+      playGunshotSound();
+      shakeStrength = 0.35;
+
+      const mesh = victim.mesh;
+      let progress = 0;
+
+      function fall() {
+        progress += 0.025;
+
+        mesh.rotation.x = Math.min(
+          Math.PI / 2,
+          mesh.rotation.x + 0.08
+        );
+
+        mesh.position.y = Math.max(
+          -0.45,
+          mesh.position.y - 0.045
+        );
+
+        if (progress < 1) {
+          requestAnimationFrame(fall);
+        } else {
+          setTimeout(() => {
+            scene.remove(mesh);
+          }, 3000);
+        }
+      }
+
+      fall();
+    }
+
+    function startSimmonsDeathCinematic() {
+      if (simmonsEventStarted || stormCinematicActive || isDead || isWon) return;
+      const victim = companions[0];
+      const shooter = companions[1];
+      if (!victim.alive || !shooter.alive) { simmonsEventStarted = true; return; }
+      simmonsEventStarted = true; stormCinematicActive = true;
+      moveForward = false; moveBackward = false; moveLeft = false; moveRight = false; isSprinting = false;
+
+      const simmonsLine = "¿Lo oyes? ¡La lluvia tiene voces! ¡Dice que nos está contando! ¡Dice que ya estamos dentro!";
+      const shotTime = estimatedSpeechDuration(simmonsLine, 1.05) / 1000 + 1.6;
+      const duration = shotTime + 6;
+
+      setStoryMessage("Simmons se detiene de golpe. La lluvia parece susurrarle algo que solo él puede oír.");
+      enqueueDialogue({ speaker: "SIMMONS", text: simmonsLine, rate: 1.05, pitch: 0.62, volume: 1, hints: ["male", "google"], pauseAfter: 200, priority: true });
+
+      let elapsed = 0; let shotFired = false; let dialogueQueued = false;
+      const cinematicCamera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 2000);
+      activeCamera = cinematicCamera;
+
+      function updateSimmonsDeath(delta) {
+        elapsed += delta;
+        victim.mesh.lookAt(shooter.mesh.position.x, 0, shooter.mesh.position.z);
+        shooter.mesh.lookAt(victim.mesh.position.x, 0, victim.mesh.position.z);
+
+        if (elapsed >= shotTime && !shotFired) {
+          shotFired = true; victim.alive = false; updateCrewUI();
+          playGunshotSound(); triggerImpactFlash(); shakeStrength = 0.4;
+          setStoryMessage("Pickard levanta el arma con manos temblorosas. Un disparo atraviesa la lluvia.");
+        }
+
+        if (shotFired) {
+          victim.mesh.rotation.x = Math.min(Math.PI / 2, victim.mesh.rotation.x + delta * 2.2);
+          victim.mesh.position.y = Math.max(-0.45, victim.mesh.position.y - delta * 1.1);
+        }
+
+        const focus = (!shotFired || elapsed < shotTime + 2)
+          ? (shotFired ? shooter.mesh.position.clone() : victim.mesh.position.clone())
+          : victim.mesh.position.clone();
+        focus.y += 1.5;
+        const offset = (!shotFired || elapsed < shotTime + 2)
+          ? (shotFired ? new THREE.Vector3(8, 4, 9) : new THREE.Vector3(6, 4, 7))
+          : new THREE.Vector3(6, 4, 7);
+        cinematicCamera.position.copy(focus).add(offset);
+        cinematicCamera.lookAt(focus);
+
+        if (elapsed >= shotTime + 2.2 && !dialogueQueued) {
+          dialogueQueued = true;
+          enqueueDialogue({ speaker: "PICKARD", text: "¡Ya no era Simmons! ¡Esa cosa usaba su voz! ¡Sigan caminando!", rate: 1.16, pitch: 1.2, volume: 1, hints: ["female", "google"], pauseAfter: 500, priority: true });
+        }
+
+        if (elapsed < duration) { requestAnimationFrame(() => updateSimmonsDeath(1 / 60)); return; }
+        stormCinematicActive = false; activeCamera = camera; shakeStrength = 0;
+        setStoryMessage("El cuerpo de Simmons queda tendido entre la lluvia. La brújula dañada sigue señalando la cúpula.");
+        setObjective("OBJETIVO: DIRÍGETE AL NORTE. BUSCA LA CÚPULA SOLAR.");
+      }
+      updateSimmonsDeath(1 / 60);
+    }
+
+    function startPickardDeathCinematic() {
+      if (pickardSuicideStarted || stormCinematicActive || isDead || isWon) return;
+      const victim = companions[1];
+      if (!victim.alive) { pickardSuicideStarted = true; return; }
+      pickardSuicideStarted = true; stormCinematicActive = true;
+      moveForward = false; moveBackward = false; moveLeft = false; moveRight = false; isSprinting = false;
+
+      const line1 = "Maldición... Está destruida. No hay puerta, ni luz, ni refugio. Solo restos bajo la lluvia.";
+      const line2 = "Pensé que si llegábamos aquí todavía habría una oportunidad. Pero no la hay. Perdí la esperanza hace mucho, teniente. No voy a dejar que esta lluvia me borre también.";
+      const shotTime = (estimatedSpeechDuration(line1, 0.9) + 700 + estimatedSpeechDuration(line2, 0.85) + 1200) / 1000;
+      const duration = shotTime + 6.5;
+
+      setStoryMessage("Llegan a la cúpula. Está destruida. No hay refugio, ni luz estable, ni puerta funcional.");
+      enqueueDialogue({ speaker: "PICKARD", text: line1, rate: 0.9, pitch: 1.02, volume: 0.98, hints: ["female", "google"], pauseAfter: 700, priority: true });
+      enqueueDialogue({ speaker: "PICKARD", text: line2, rate: 0.85, pitch: 1.0, volume: 0.98, hints: ["female", "google"], pauseAfter: 1200, priority: true });
+
+      let elapsed = 0; let shotFired = false; let revealQueued = false;
+      const cinematicCamera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 2000);
+      activeCamera = cinematicCamera;
+
+      function updatePickardDeath(delta) {
+        elapsed += delta;
+        victim.mesh.lookAt(cameraRig.position.x, 0, cameraRig.position.z);
+
+        if (elapsed >= shotTime && !shotFired) {
+          shotFired = true; victim.alive = false; updateCrewUI();
+          playGunshotSound(); triggerImpactFlash(); shakeStrength = 0.4;
+          setStoryMessage("Pickard se lleva el arma al casco. Un disparo seco se pierde bajo la lluvia.");
+        }
+
+        if (shotFired) {
+          victim.mesh.rotation.x = Math.min(Math.PI / 2, victim.mesh.rotation.x + delta * 2.2);
+          victim.mesh.position.y = Math.max(-0.45, victim.mesh.position.y - delta * 1.1);
+        }
+
+        const focus = victim.mesh.position.clone(); focus.y += 1.5;
+        cinematicCamera.position.copy(focus).add(new THREE.Vector3(7, 4, 8));
+        cinematicCamera.lookAt(focus);
+
+        if (elapsed >= shotTime + 2.5 && !revealQueued) {
+          revealQueued = true;
+          currentObjective = { x: domeFinalGroup.position.x, z: domeFinalGroup.position.z, label: "CÚPULA SOLAR VERDADERA" };
+          enqueueDialogue({ speaker: "NARRADOR", text: "La brújula se recalibra. Más al sur, entre la lluvia, responde una señal distinta: la cúpula solar verdadera.", rate: 0.8, pitch: 0.78, volume: 0.9, hints: ["male", "google"], pauseAfter: 500, priority: true });
+        }
+
+        if (elapsed < duration) { requestAnimationFrame(() => updatePickardDeath(1 / 60)); return; }
+        stormCinematicActive = false; activeCamera = camera; shakeStrength = 0;
+        setStoryMessage("El cuerpo de Pickard queda junto a la cúpula destruida. La brújula ahora señala la cúpula verdadera.");
+        setObjective("OBJETIVO: DIRÍGETE AL NORTE. BUSCA LA CÚPULA SOLAR VERDADERA.");
+      }
+      updatePickardDeath(1 / 60);
+    }
+
+    function pickardFarewell() {
+      if (pickardFarewellStarted) return;
+
+      const victim = companions[1];
+
+      if (!victim || !victim.alive) return;
+
+      pickardFarewellStarted = true;
+
+      const dialogueText =
+        "Teniente... si llegas a la cúpula, recuerda que intentamos volver a casa. No dejes que esta lluvia te convierta en uno de ellos.";
+
+      setStoryMessage(
+        "Pickard se queda atrás, mirando la cúpula solar entre la lluvia. Su respiración suena irregular por la radio."
+      );
+
+      enqueueDialogue({
+        speaker: "PICKARD",
+        text: dialogueText,
+        rate: 0.84,
+        pitch: 1.02,
+        volume: 0.98,
+        hints: ["female", "google"],
+        pauseAfter: 700,
+        priority: true
+      });
+
+      const mesh = victim.mesh;
+      let progress = 0;
+
+      function lookBack() {
+        progress += 0.01;
+
+        mesh.rotation.y += 0.015;
+        mesh.position.x += Math.sin(progress * 8) * 0.004;
+
+        if (progress < 1) {
+          requestAnimationFrame(lookBack);
+        }
+      }
+
+      lookBack();
+    }
+
+    function pickardSuicide() {
+      if (pickardSuicideStarted) return;
+
+      const victim = companions[1];
+
+      if (!victim || !victim.alive) return;
+
+      pickardSuicideStarted = true;
+
+      setStoryMessage(
+        "Pickard se detiene frente a los restos de la cúpula. La lluvia le corre por el visor mientras se lleva el arma al casco."
+      );
+
+      enqueueDialogue({
+        speaker: "PICKARD",
+        text: "No puedo escuchar mi propio nombre... Perdón. No voy a dejar que Venus me borre.",
+        rate: 0.82,
+        pitch: 1.05,
+        volume: 0.98,
+        hints: ["female", "google"],
+        pauseAfter: 500,
+        priority: true
+      });
+
+      const mesh = victim.mesh;
+      let progress = 0;
+
+      function prepare() {
+        progress += 0.012;
+
+        mesh.rotation.z = Math.sin(progress * 12) * 0.06;
+        mesh.rotation.x = -0.08 * Math.sin(progress * Math.PI);
+
+        if (progress < 1) {
+          requestAnimationFrame(prepare);
+        }
+      }
+
+      prepare();
+
+      const waitTime = estimatedSpeechDuration(
+        "No puedo escuchar mi propio nombre... Perdón. No voy a dejar que Venus me borre.",
+        0.82
+      ) + 900;
+
+      setTimeout(() => {
+        animateCompanionShot(
+          1,
+          "Un disparo seco se pierde bajo la lluvia. Pickard cae entre la vegetación. Ahora solo quedas tú.",
+          null
+        );
+      }, waitTime);
+    }
+
+
+    function setHallucinationLevel(level) {
+      if (level <= 0) {
+        hallucinationOverlay.style.opacity = "0";
+        hallucinationFace.style.display = "none";
+        return;
+      }
+
+      hallucinationOverlay.style.opacity = Math.min(0.85, level * 0.28);
+    }
+
+    function triggerHallucination() {
+      if (hallucinationActive || isDead || isWon || stormChaseActive) return;
+
+      hallucinationActive = true;
+      hallucinationCooldown = 8 + Math.random() * 14;
+
+      const intensity = sanity < 25 ? 3 : sanity < 45 ? 2 : 1;
+
+      if (intensity === 1) {
+        setHallucinationLevel(1);
+        setTimeout(() => {
+          setHallucinationLevel(0);
+          hallucinationActive = false;
+        }, 1400);
+        return;
+      }
+
+      if (intensity === 2) {
+        setHallucinationLevel(2);
+        playRadioStatic();
+        setTimeout(() => { hallucinationFace.style.display = "block"; }, 350);
+        setTimeout(() => {
+          hallucinationFace.style.display = "none";
+          setHallucinationLevel(0);
+          hallucinationActive = false;
+        }, 1500);
+        return;
+      }
+
+      setHallucinationLevel(3);
+      playRadioStatic();
+      playThunderSound();
+      shakeStrength = 0.22;
+      setTimeout(() => { hallucinationFace.style.display = "block"; }, 250);
+      setTimeout(() => {
+        hallucinationFace.style.display = "none";
+        setHallucinationLevel(0);
+        shakeStrength = 0;
+        hallucinationActive = false;
+      }, 1700);
+    }
+
+    function updateHallucinations(delta) {
+      if (isDead || isWon || stormChaseActive) return;
+
+      if (sanity >= 70) {
+        hallucinationTimer = 18 + Math.random() * 18;
+        setHallucinationLevel(0);
+        return;
+      }
+
+      hallucinationTimer -= delta;
+
+      if (hallucinationTimer <= 0) {
+        triggerHallucination();
+        hallucinationTimer = hallucinationCooldown;
+      }
+
+      if (sanity < 45 && sanity >= 25) setHallucinationLevel(1);
+      else if (sanity < 25 && sanity >= 10) setHallucinationLevel(2);
+      else if (sanity < 10) setHallucinationLevel(3);
+    }
+
+    function createBox(
+      group,
+      width,
+      height,
+      depth,
+      x,
+      y,
+      z,
+      material
+    ) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(width, height, depth),
+        material
+      );
+
+      mesh.position.set(x, y, z);
+      group.add(mesh);
+
+      return mesh;
+    }
+
+    function createLight(
+      group,
+      x,
+      y,
+      z,
+      color,
+      intensity,
+      distance
+    ) {
+      const light = new THREE.PointLight(
+        color,
+        intensity,
+        distance
+      );
+
+      light.position.set(x, y, z);
+      group.add(light);
+
+      return light;
+    }
+
+    /* ============================================================
+       TEXTURAS PROCEDURALES
+    ============================================================ */
+
+    function createIndustrialTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#1a2733";
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.strokeStyle = "rgba(148,163,184,.24)";
+      ctx.lineWidth = 3;
+
+      for (let x = 0; x <= 512; x += 128) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 512);
+        ctx.stroke();
+      }
+
+      for (let y = 0; y <= 512; y += 128) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(512, y);
+        ctx.stroke();
+      }
+
+      for (let x = 18; x < 512; x += 128) {
+        for (let y = 18; y < 512; y += 128) {
+          ctx.fillStyle = "#607080";
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "rgba(0,0,0,.45)";
+          ctx.beginPath();
+          ctx.arc(x + 2, y + 2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      for (let i = 0; i < 170; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const length = 6 + Math.random() * 38;
+
+        ctx.strokeStyle =
+          Math.random() > 0.6
+            ? "rgba(203,213,225,.10)"
+            : "rgba(0,0,0,.15)";
+
+        ctx.lineWidth = Math.random() * 1.5 + 0.4;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(
+          x + length,
+          y + Math.random() * 4 - 2
+        );
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#b45309";
+      ctx.fillRect(0, 445, 512, 34);
+
+      ctx.strokeStyle = "#fef3c7";
+      ctx.lineWidth = 9;
+
+      for (let x = -40; x < 560; x += 42) {
+        ctx.beginPath();
+        ctx.moveTo(x, 479);
+        ctx.lineTo(x + 36, 445);
+        ctx.stroke();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+
+      return texture;
+    }
+
+    function createSuitTexture(primaryColor, stripeColor) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 256;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = primaryColor;
+      ctx.fillRect(0, 0, 256, 256);
+
+      ctx.strokeStyle = "rgba(255,255,255,.12)";
+      ctx.lineWidth = 2;
+
+      for (let y = 0; y < 256; y += 16) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(256, y);
+        ctx.stroke();
+      }
+
+      for (let x = 0; x < 256; x += 24) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 256);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < 45; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const radius = 2 + Math.random() * 9;
+
+        ctx.fillStyle = "rgba(0,0,0,.08)";
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = stripeColor;
+      ctx.fillRect(0, 92, 256, 28);
+
+      ctx.fillStyle = "rgba(255,255,255,.25)";
+      ctx.fillRect(0, 92, 256, 5);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(1, 2);
+
+      return texture;
+    }
+
+    /* ============================================================
+       NAVE ICARUS-7
+    ============================================================ */
+
+    const shipGroup = new THREE.Group();
+    scene.add(shipGroup);
+
+    const shipLights = [];
+    const shipConsoleLights = [];
+    const industrialTexture = createIndustrialTexture();
+
+    const hullMat = new THREE.MeshStandardMaterial({
+      color: 0x6b7b89,
+      map: industrialTexture,
+      roughness: 0.46,
+      metalness: 0.88
+    });
+
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x18212d,
+      map: industrialTexture,
+      roughness: 0.68,
+      metalness: 0.64
+    });
+
+    const ceilingMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.5,
+      metalness: 0.74
+    });
+
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      emissive: 0x0c4a6e,
+      emissiveIntensity: 0.42,
+      roughness: 0.3,
+      metalness: 0.75
+    });
+
+    const bridgeConsoleMat = new THREE.MeshStandardMaterial({
+      color: 0x172554,
+      emissive: 0x0ea5e9,
+      emissiveIntensity: 0.58,
+      roughness: 0.25,
+      metalness: 0.85
+    });
+
+    const bedMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      roughness: 0.62,
+      metalness: 0.38
+    });
+
+    const emergencyMat = new THREE.MeshStandardMaterial({
+      color: 0x3f0b0b,
+      emissive: 0xef4444,
+      emissiveIntensity: 0.25,
+      roughness: 0.35,
+      metalness: 0.52
+    });
+
+    createBox(shipGroup, 10, 0.3, 42, 0, 0, -15, floorMat);
+    createBox(shipGroup, 10, 0.3, 42, 0, 5, -15, ceilingMat);
+
+    createBox(shipGroup, 0.4, 5, 42, -5, 2.5, -15, hullMat);
+    createBox(shipGroup, 0.4, 5, 42, 5, 2.5, -15, hullMat);
+
+    createBox(shipGroup, 10, 5, 0.4, 0, 2.5, 6, hullMat);
+    createBox(shipGroup, 10, 5, 0.4, 0, 2.5, -36, hullMat);
+
+    function createBulkhead(z) {
+      createBox(shipGroup, 3.55, 5, 0.28, -3.22, 2.5, z, hullMat);
+      createBox(shipGroup, 3.55, 5, 0.28, 3.22, 2.5, z, hullMat);
+
+      const doorTop = createBox(
+        shipGroup,
+        2.9,
+        0.55,
+        0.32,
+        0,
+        4.72,
+        z,
+        emergencyMat
+      );
+
+      shipConsoleLights.push(doorTop);
+    }
+
+    createBulkhead(-4);
+    createBulkhead(-16);
+    createBulkhead(-27);
+
+    for (let z = 3; z > -34; z -= 5) {
+      const panel = createBox(
+        shipGroup,
+        3.4,
+        0.1,
+        0.55,
+        0,
+        4.78,
+        z,
+        panelMat
+      );
+
+      shipConsoleLights.push(panel);
+
+      shipLights.push(
+        createLight(
+          shipGroup,
+          0,
+          4.45,
+          z,
+          0x60a5fa,
+          0.7,
+          10
+        )
+      );
+    }
+
+    const spawnFloorLightMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.9,
+      roughness: 0.25,
+      metalness: 0.85
+    });
+
+    createBox(
+      shipGroup,
+      4.2,
+      0.08,
+      0.45,
+      0,
+      0.19,
+      3.8,
+      spawnFloorLightMat
+    );
+
+    createBox(
+      shipGroup,
+      4.2,
+      0.08,
+      0.45,
+      0,
+      0.19,
+      1.5,
+      spawnFloorLightMat
+    );
+
+    const rearDoorMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      emissive: 0x0b3553,
+      emissiveIntensity: 0.25,
+      roughness: 0.38,
+      metalness: 0.88
+    });
+
+    createBox(
+      shipGroup,
+      5.4,
+      4.2,
+      0.2,
+      0,
+      2.3,
+      5.7,
+      rearDoorMat
+    );
+
+    for (const x of [-3.65, 3.65]) {
+      createBox(shipGroup, 1.1, 0.7, 3.6, x, 0.7, -10, bedMat);
+      createBox(shipGroup, 1.1, 0.7, 3.6, x, 0.7, -21, bedMat);
+
+      createBox(shipGroup, 1.25, 1.4, 0.65, x, 0.75, -13.2, panelMat);
+      createBox(shipGroup, 1.25, 1.4, 0.65, x, 0.75, -24.2, panelMat);
+
+      const consoleMesh = createBox(
+        shipGroup,
+        1.3,
+        1.25,
+        2.8,
+        x,
+        0.75,
+        -14,
+        panelMat
+      );
+
+      consoleMesh.rotation.z = x < 0 ? -0.08 : 0.08;
+      shipConsoleLights.push(consoleMesh);
+    }
+
+    const mainBridgeConsole = createBox(
+      shipGroup,
+      6.4,
+      1.25,
+      2,
+      0,
+      0.75,
+      -31.4,
+      bridgeConsoleMat
+    );
+
+    const leftBridgeConsole = createBox(
+      shipGroup,
+      2.1,
+      1.05,
+      1.8,
+      -3.25,
+      0.65,
+      -29.25,
+      bridgeConsoleMat
+    );
+
+    const rightBridgeConsole = createBox(
+      shipGroup,
+      2.1,
+      1.05,
+      1.8,
+      3.25,
+      0.65,
+      -29.25,
+      bridgeConsoleMat
+    );
+
+    shipConsoleLights.push(
+      mainBridgeConsole,
+      leftBridgeConsole,
+      rightBridgeConsole
+    );
+
+    shipLights.push(
+      createLight(
+        shipGroup,
+        0,
+        3.8,
+        -31,
+        0x0ea5e9,
+        1.2,
+        12
+      )
+    );
+
+    const windowMat = new THREE.MeshBasicMaterial({
+      color: 0x0ea5e9,
+      transparent: true,
+      opacity: 0.3
+    });
+
+    createBox(
+      shipGroup,
+      7.2,
+      2.7,
+      0.12,
+      0,
+      3.15,
+      -35.72,
+      windowMat
+    );
+
+    const venusView = new THREE.Mesh(
+      new THREE.SphereGeometry(20, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x285943
+      })
+    );
+
+    venusView.position.set(0, 4, -53);
+    shipGroup.add(venusView);
+
+    const atmosphereCloud = new THREE.Mesh(
+      new THREE.SphereGeometry(20.2, 32, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0x132a20,
+        transparent: true,
+        opacity: 0.48
+      })
+    );
+
+    atmosphereCloud.position.set(0, 4, -53);
+    shipGroup.add(atmosphereCloud);
+
+    const navConsolePosition = new THREE.Vector3(
+      0,
+      1,
+      -30.3
+    );
+
+    /* ============================================================
+       PERSONAJES HUMANOIDES
+    ============================================================ */
+
+    function createAstronautMesh(
+      visorColor,
+      suitColor = "#d6dee6"
+    ) {
+      const group = new THREE.Group();
+
+      const visorHex =
+        "#" + visorColor.toString(16).padStart(6, "0");
+
+      const suitTexture = createSuitTexture(
+        suitColor,
+        visorHex
+      );
+
+      const suitMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        map: suitTexture,
+        roughness: 0.62,
+        metalness: 0.22
+      });
+
+      const darkMat = new THREE.MeshStandardMaterial({
+        color: 0x1f2937,
+        roughness: 0.45,
+        metalness: 0.5
+      });
+
+      const bootMat = new THREE.MeshStandardMaterial({
+        color: 0x111827,
+        roughness: 0.7,
+        metalness: 0.28
+      });
+
+      const metalMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        roughness: 0.28,
+        metalness: 0.85
+      });
+
+      const visorMat = new THREE.MeshStandardMaterial({
+        color: visorColor,
+        roughness: 0.08,
+        metalness: 0.95,
+        emissive: visorColor,
+        emissiveIntensity: 0.13
+      });
+
+      const leftLeg = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.19, 0.23, 0.85, 12),
+        suitMat
+      );
+
+      leftLeg.position.set(-0.19, 0.45, 0);
+      group.add(leftLeg);
+
+      const rightLeg = leftLeg.clone();
+      rightLeg.position.x = 0.19;
+      group.add(rightLeg);
+
+      const leftBoot = new THREE.Mesh(
+        new THREE.BoxGeometry(0.28, 0.23, 0.46),
+        bootMat
+      );
+
+      leftBoot.position.set(-0.19, 0.08, -0.08);
+      group.add(leftBoot);
+
+      const rightBoot = leftBoot.clone();
+      rightBoot.position.x = 0.19;
+      group.add(rightBoot);
+
+      const hips = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38, 0.42, 0.3, 14),
+        darkMat
+      );
+
+      hips.position.y = 0.92;
+      group.add(hips);
+
+      const torso = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.46, 0.40, 1.25, 16),
+        suitMat
+      );
+
+      torso.position.y = 1.5;
+      torso.scale.z = 0.78;
+      group.add(torso);
+
+      const chestPlate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.58, 0.44, 0.12),
+        metalMat
+      );
+
+      chestPlate.position.set(0, 1.58, -0.39);
+      group.add(chestPlate);
+
+      const chestLight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.08, 0.03),
+        new THREE.MeshStandardMaterial({
+          color: 0x0f172a,
+          emissive: visorColor,
+          emissiveIntensity: 1.1
+        })
+      );
+
+      chestLight.position.set(0, 1.58, -0.47);
+      group.add(chestLight);
+
+      function createArm(side) {
+        const armGroup = new THREE.Group();
+
+        const upperArm = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.16, 0.19, 0.6, 12),
+          suitMat
+        );
+
+        upperArm.rotation.z = side * 0.18;
+        upperArm.position.y = -0.27;
+        armGroup.add(upperArm);
+
+        const elbow = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 12, 12),
+          darkMat
+        );
+
+        elbow.position.set(side * 0.08, -0.57, 0);
+        armGroup.add(elbow);
+
+        const forearm = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.14, 0.16, 0.5, 12),
+          suitMat
+        );
+
+        forearm.rotation.z = side * -0.1;
+        forearm.position.set(side * 0.12, -0.83, 0);
+        armGroup.add(forearm);
+
+        const glove = new THREE.Mesh(
+          new THREE.SphereGeometry(0.17, 12, 12),
+          bootMat
+        );
+
+        glove.position.set(side * 0.14, -1.1, -0.03);
+        glove.scale.set(0.85, 1.05, 0.85);
+        armGroup.add(glove);
+
+        armGroup.position.set(side * 0.55, 1.75, 0);
+
+        return armGroup;
+      }
+
+      group.add(createArm(-1));
+      group.add(createArm(1));
+
+      const backpack = new THREE.Mesh(
+        new THREE.BoxGeometry(0.68, 0.9, 0.28),
+        darkMat
+      );
+
+      backpack.position.set(0, 1.55, 0.38);
+      group.add(backpack);
+
+      const oxygenTank = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.12, 0.7, 10),
+        metalMat
+      );
+
+      oxygenTank.rotation.z = Math.PI / 2;
+      oxygenTank.position.set(0, 1.77, 0.59);
+      group.add(oxygenTank);
+
+      const neckRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.28, 0.07, 8, 16),
+        metalMat
+      );
+
+      neckRing.rotation.x = Math.PI / 2;
+      neckRing.position.y = 2.08;
+      group.add(neckRing);
+
+      const helmet = new THREE.Mesh(
+        new THREE.SphereGeometry(0.39, 20, 18),
+        new THREE.MeshStandardMaterial({
+          color: 0xd7e3eb,
+          roughness: 0.25,
+          metalness: 0.65
+        })
+      );
+
+      helmet.position.y = 2.32;
+      helmet.scale.set(1, 0.92, 1);
+      group.add(helmet);
+
+      const visor = new THREE.Mesh(
+        new THREE.SphereGeometry(
+          0.325,
+          20,
+          16,
+          Math.PI * 0.05,
+          Math.PI * 0.9,
+          Math.PI * 0.2,
+          Math.PI * 0.62
+        ),
+        visorMat
+      );
+
+      visor.position.set(0, 2.32, -0.13);
+      visor.scale.set(1, 0.85, 0.55);
+      group.add(visor);
+
+      const antenna = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.018, 0.018, 0.34, 6),
+        metalMat
+      );
+
+      antenna.position.set(0.26, 2.68, 0.04);
+      antenna.rotation.z = -0.35;
+      group.add(antenna);
+
+      const helmetLight = new THREE.Mesh(
+        new THREE.SphereGeometry(0.035, 8, 8),
+        new THREE.MeshBasicMaterial({
+          color: 0xd9f99d
+        })
+      );
+
+      helmetLight.position.set(-0.22, 2.51, -0.27);
+      group.add(helmetLight);
+
+      group.scale.set(0.82, 0.82, 0.82);
+
+      return group;
+    }
+
+    const companions = [
+      {
+        name: "Simmons",
+        mesh: createAstronautMesh(0x38bdf8, "#b9d8e8"),
+        alive: true,
+        shipPosition: new THREE.Vector3(-2.3, 0, -28.4),
+        followOffset: new THREE.Vector3(-1.3, 0, 3.5)
+      },
+      {
+        name: "Pickard",
+        mesh: createAstronautMesh(0xa855f7, "#d8c2df"),
+        alive: true,
+        shipPosition: new THREE.Vector3(2.3, 0, -28.2),
+        followOffset: new THREE.Vector3(1.3, 0, 5.5)
+      },
+      {
+        name: "Vargas",
+        mesh: createAstronautMesh(0xf59e0b, "#d8d1b5"),
+        alive: true,
+        shipPosition: new THREE.Vector3(0, 0, -32.5),
+        followOffset: new THREE.Vector3(0, 0, 7.4)
+      }
+    ];
+
+    companions.forEach((companion) => {
+      companion.mesh.position.copy(companion.shipPosition);
+      shipGroup.add(companion.mesh);
+    });
+
+    /* ============================================================
+       VENUS
+    ============================================================ */
+
+    const venusGroup = new THREE.Group();
+    venusGroup.visible = false;
+    scene.add(venusGroup);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(2600, 4600),
+      new THREE.MeshStandardMaterial({
+        color: 0x091c12,
+        roughness: 0.9,
+        metalness: 0.05
+      })
+    );
+
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -1800;
+    venusGroup.add(ground);
+
+    const river = new THREE.Mesh(
+      new THREE.PlaneGeometry(2400, 140),
+      new THREE.MeshBasicMaterial({
+        color: 0x06283d,
+        transparent: true,
+        opacity: 0.88
+      })
+    );
+
+    river.rotation.x = -Math.PI / 2;
+    river.position.set(0, 0.06, -900);
+    venusGroup.add(river);
+
+    const stemGeo = new THREE.CylinderGeometry(
+      0.36,
+      0.82,
+      10,
+      8
+    );
+
+    const stemMat = new THREE.MeshStandardMaterial({
+      color: 0xe7edf0,
+      roughness: 0.58
+    });
+
+    const capGeo = new THREE.SphereGeometry(
+      3,
+      14,
+      14,
+      0,
+      Math.PI * 2,
+      0,
+      Math.PI / 2
+    );
+
+    const capMat = new THREE.MeshStandardMaterial({
+      color: 0x31563a,
+      roughness: 0.54
+    });
+
+    for (let i = 0; i < 650; i++) {
+      const x = (Math.random() - 0.5) * 2200;
+      const z = -Math.random() * 4200;
+
+      if (Math.abs(z + 750) < 90) continue;
+      if (Math.abs(x) < 12 && z > -60) continue;
+
+      const mushroom = new THREE.Group();
+
+      const heightScale = 0.55 + Math.random() * 1.3;
+      const widthScale = 0.45 + Math.random() * 1.25;
+
+      const stem = new THREE.Mesh(stemGeo, stemMat);
+      stem.scale.set(widthScale, heightScale, widthScale);
+      stem.position.y = 5 * heightScale;
+
+      const cap = new THREE.Mesh(capGeo, capMat);
+      cap.scale.set(widthScale, heightScale * 0.7, widthScale);
+      cap.position.y = 10 * heightScale;
+
+      mushroom.add(stem);
+      mushroom.add(cap);
+
+      mushroom.position.set(x, 0, z);
+      mushroom.rotation.y = Math.random() * Math.PI;
+
+      venusGroup.add(mushroom);
+    }
+
+    const wreckGroup = new THREE.Group();
+    wreckGroup.position.set(0, 0, -90);
+
+    const wreckMat = new THREE.MeshStandardMaterial({
+      color: 0x364152,
+      roughness: 0.65,
+      metalness: 0.78
+    });
+
+    const wreckBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 3.1, 18, 10),
+      wreckMat
+    );
+
+    wreckBody.rotation.z = Math.PI / 2.7;
+    wreckBody.position.y = 2.5;
+    wreckGroup.add(wreckBody);
+
+    for (let i = 0; i < 7; i++) {
+      const debris = new THREE.Mesh(
+        new THREE.BoxGeometry(
+          0.5 + Math.random() * 2,
+          0.4 + Math.random() * 1.2,
+          0.6 + Math.random() * 2.4
+        ),
+        wreckMat
+      );
+
+      debris.position.set(
+        (Math.random() - 0.5) * 18,
+        Math.random() * 1.3,
+        (Math.random() - 0.5) * 17
+      );
+
+      debris.rotation.set(
+        Math.random() * 2,
+        Math.random() * 2,
+        Math.random() * 2
+      );
+
+      wreckGroup.add(debris);
+    }
+
+    venusGroup.add(wreckGroup);
+
+    const dome1Group = new THREE.Group();
+    const dome1X = (Math.random() - 0.5) * 1000;
+    const dome1Z = -1500 - Math.random() * 400;
+    dome1Group.position.set(dome1X, 0, dome1Z);
+
+    const ruinedDomeTexture = (() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#22282e"; ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 220; i++) {
+        ctx.strokeStyle = `rgba(${20 + Math.random() * 40}, ${25 + Math.random() * 35}, ${30 + Math.random() * 35}, .5)`;
+        ctx.lineWidth = 1 + Math.random() * 4;
+        ctx.beginPath(); ctx.moveTo(Math.random() * 512, Math.random() * 512);
+        ctx.lineTo(Math.random() * 512, Math.random() * 512); ctx.stroke();
+      }
+      for (let i = 0; i < 90; i++) {
+        ctx.fillStyle = `rgba(0,0,0,${0.2 + Math.random() * 0.5})`;
+        ctx.beginPath(); ctx.arc(Math.random() * 512, Math.random() * 512, 4 + Math.random() * 26, 0, Math.PI * 2); ctx.fill();
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(4, 2);
+      return texture;
+    })();
+
+    const ruinedDomeMat = new THREE.MeshStandardMaterial({
+      color: 0x39424b, map: ruinedDomeTexture, roughness: 0.92, metalness: 0.35, side: THREE.DoubleSide
+    });
+
+    const ruinedShell = new THREE.Mesh(
+      new THREE.SphereGeometry(25, 32, 24, Math.PI * 0.18, Math.PI * 1.64, 0, Math.PI / 2),
+      ruinedDomeMat
+    );
+    ruinedShell.rotation.y = Math.PI;
+    dome1Group.add(ruinedShell);
+
+    const ruinedFloor = new THREE.Mesh(
+      new THREE.CircleGeometry(24.4, 32),
+      new THREE.MeshStandardMaterial({ color: 0x10151a, roughness: 0.95, metalness: 0.15 })
+    );
+    ruinedFloor.rotation.x = -Math.PI / 2; ruinedFloor.position.y = 0.02;
+    dome1Group.add(ruinedFloor);
+
+    const brokenWallMat = new THREE.MeshStandardMaterial({ color: 0x2b333b, roughness: 0.9, metalness: 0.4 });
+
+    for (let i = 0; i < 16; i++) {
+      const debris = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6 + Math.random() * 3.2, 0.4 + Math.random() * 2.4, 0.6 + Math.random() * 3.2),
+        brokenWallMat
+      );
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 4 + Math.random() * 17;
+      debris.position.set(Math.cos(angle) * radius, 0.25 + Math.random() * 1.1, Math.sin(angle) * radius);
+      debris.rotation.set(Math.random() * 1.2, Math.random() * Math.PI, Math.random() * 1.2);
+      dome1Group.add(debris);
+    }
+
+    const brokenCore = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.4, 3.2, 7, 12, 1, true), brokenWallMat
+    );
+    brokenCore.position.set(0, 3.2, 0); brokenCore.rotation.z = 0.22;
+    dome1Group.add(brokenCore);
+
+    const ruinedLight = new THREE.PointLight(0x38bdf8, 0.55, 38);
+    ruinedLight.position.set(0, 6, 0);
+    dome1Group.add(ruinedLight);
+
+    venusGroup.add(dome1Group);
+
+    const domeFinalGroup = new THREE.Group();
+    const domeFinalX = (Math.random() - 0.5) * 1200;
+    const domeFinalZ = -2400 - Math.random() * 500;
+    domeFinalGroup.position.set(domeFinalX, 0, domeFinalZ);
+
+    const safeDomeMat = new THREE.MeshStandardMaterial({
+      color: 0xd9c26a, emissive: 0xfacc15, emissiveIntensity: 0.32,
+      roughness: 0.42, metalness: 0.45, side: THREE.DoubleSide
+    });
+
+    const safeShell = new THREE.Mesh(
+      new THREE.SphereGeometry(35, 40, 28, Math.PI * 0.12, Math.PI * 1.76, 0, Math.PI / 2),
+      safeDomeMat
+    );
+    safeShell.rotation.y = Math.PI;
+    domeFinalGroup.add(safeShell);
+
+    const safeFloor = new THREE.Mesh(
+      new THREE.CircleGeometry(34.4, 40),
+      new THREE.MeshStandardMaterial({ color: 0x2b2415, roughness: 0.68, metalness: 0.22 })
+    );
+    safeFloor.rotation.x = -Math.PI / 2; safeFloor.position.y = 0.03;
+    domeFinalGroup.add(safeFloor);
+
+    const finalSun = new THREE.Mesh(
+      new THREE.SphereGeometry(5.2, 28, 28),
+      new THREE.MeshBasicMaterial({ color: 0xfef08a })
+    );
+    finalSun.position.set(0, 20, 0);
+    domeFinalGroup.add(finalSun);
+
+    const sunLight = new THREE.PointLight(0xffd966, 6.5, 240);
+    sunLight.position.set(0, 17, 0);
+    domeFinalGroup.add(sunLight);
+
+    const calmLightOne = new THREE.PointLight(0xfff3c4, 2.2, 90);
+    calmLightOne.position.set(-14, 6, -10);
+    domeFinalGroup.add(calmLightOne);
+
+    const calmLightTwo = new THREE.PointLight(0xfff3c4, 2.2, 90);
+    calmLightTwo.position.set(14, 6, -10);
+    domeFinalGroup.add(calmLightTwo);
+
+    const domeDoor = new THREE.Mesh(
+      new THREE.BoxGeometry(9, 9, 0.6),
+      new THREE.MeshStandardMaterial({
+        color: 0x8a6a10, emissive: 0xfacc15, emissiveIntensity: 0.28,
+        roughness: 0.35, metalness: 0.65
+      })
+    );
+    domeDoor.position.set(0, 4.5, 34.4);
+    domeFinalGroup.add(domeDoor);
+
+    venusGroup.add(domeFinalGroup);
+
+    const rainCount = 6500;
+    const rainGeo = new THREE.BufferGeometry();
+    const rainPositions = new Float32Array(rainCount * 3);
+
+    for (let i = 0; i < rainCount * 3; i += 3) {
+      rainPositions[i] = (Math.random() - 0.5) * 520;
+      rainPositions[i + 1] = Math.random() * 62;
+      rainPositions[i + 2] = (Math.random() - 0.5) * 220;
+    }
+
+    rainGeo.setAttribute(
+      "position",
+      new THREE.BufferAttribute(rainPositions, 3)
+    );
+
+    const rainSystem = new THREE.Points(
+      rainGeo,
+      new THREE.PointsMaterial({
+        color: 0x9bdcff,
+        size: 0.16,
+        transparent: true,
+        opacity: 0.76,
+        depthWrite: false
+      })
+    );
+
+    venusGroup.add(rainSystem);
+
+    const lightningLight = new THREE.PointLight(
+      0x60a5fa,
+      0,
+      260
+    );
+
+    lightningLight.position.set(0, 70, -350);
+    venusGroup.add(lightningLight);
+
+    function updateCompass() {
+      if (stage !== "VENUS" || isDead || isWon) return;
+      let targetX, targetZ, distance, label;
+      if (stormChaseActive) {
+        const playerX = cameraRig.position.x, playerZ = cameraRig.position.z;
+        targetX = playerX;
+        targetZ = playerZ - 120;
+        distance = distance2D(playerX, playerZ, stormMonsterGroup.position.x, stormMonsterGroup.position.z);
+        label = distance >= SAFE_STORM_DISTANCE ? "ZONA SEGURA ALCANZADA" : "CORRE AL NORTE";
+      } else {
+        targetX = currentObjective.x; targetZ = currentObjective.z;
+        distance = distance2D(cameraRig.position.x, cameraRig.position.z, targetX, targetZ);
+        label = currentObjective.label;
+      }
+      const dx = targetX - cameraRig.position.x, dz = targetZ - cameraRig.position.z;
+      const relativeAngle = Math.atan2(dx, dz) - yaw + Math.PI;
+      compassArrow.style.transform = "translate(-50%, -50%) rotate(" + relativeAngle + "rad)";
+      compassDistance.innerText = (stormChaseActive ? "DISTANCIA DEL MONSTRUO: " : "DISTANCIA: ") + Math.round(distance) + " M";
+      compassTarget.innerText = "OBJETIVO: " + label;
+    }
+
+    const stormMonsterGroup = new THREE.Group();
+    stormMonsterGroup.visible = false;
+    scene.add(stormMonsterGroup);
+
+    function createElectricGodzillaTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#10161c";
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 900; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const r = 2 + Math.random() * 9;
+
+        ctx.fillStyle = Math.random() > 0.5
+          ? "rgba(30, 41, 59, 0.55)"
+          : "rgba(0, 0, 0, 0.45)";
+
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = 0; i < 24; i++) {
+        const y = Math.random() * 512;
+
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.32)";
+        ctx.lineWidth = 2 + Math.random() * 4;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+
+        for (let x = 0; x < 512; x += 32) {
+          ctx.lineTo(x, y + (Math.random() - 0.5) * 26);
+        }
+
+        ctx.stroke();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(2, 2);
+
+      return texture;
+    }
+
+    const godzillaTexture = createElectricGodzillaTexture();
+
+    const godzillaSkin = new THREE.MeshStandardMaterial({
+      color: 0x1c2733,
+      map: godzillaTexture,
+      roughness: 0.72,
+      metalness: 0.35
+    });
+
+    const godzillaGlow = new THREE.MeshStandardMaterial({
+      color: 0x0ea5e9,
+      emissive: 0x38bdf8,
+      emissiveIntensity: 2.2,
+      roughness: 0.25,
+      metalness: 0.5
+    });
+
+    const godzillaDark = new THREE.MeshStandardMaterial({
+      color: 0x0b1220,
+      roughness: 0.55,
+      metalness: 0.6
+    });
+
+    function createGodzillaLimb(radius, length, radialSegments) {
+      return new THREE.CylinderGeometry(
+        radius,
+        radius * 0.82,
+        length,
+        radialSegments
+      );
+    }
+
+    const godzillaBody = new THREE.Mesh(
+      createGodzillaLimb(5.2, 16, 20),
+      godzillaSkin
+    );
+    godzillaBody.position.set(0, 17, 0);
+    godzillaBody.rotation.x = 0.12;
+    stormMonsterGroup.add(godzillaBody);
+
+    const godzillaChest = new THREE.Mesh(
+      new THREE.SphereGeometry(5.8, 20, 16),
+      godzillaSkin
+    );
+    godzillaChest.position.set(0, 21, 2.4);
+    stormMonsterGroup.add(godzillaChest);
+
+    const godzillaHead = new THREE.Mesh(
+      new THREE.BoxGeometry(5.4, 4.4, 8.2),
+      godzillaSkin
+    );
+    godzillaHead.position.set(0, 28.5, 6.2);
+    stormMonsterGroup.add(godzillaHead);
+
+    const godzillaSnout = new THREE.Mesh(
+      new THREE.BoxGeometry(3.4, 2.6, 4.4),
+      godzillaSkin
+    );
+    godzillaSnout.position.set(0, 27.4, 10.4);
+    stormMonsterGroup.add(godzillaSnout);
+
+    const godzillaJaw = new THREE.Mesh(
+      new THREE.BoxGeometry(3.1, 0.8, 4.2),
+      godzillaDark
+    );
+    godzillaJaw.position.set(0, 25.8, 10.2);
+    stormMonsterGroup.add(godzillaJaw);
+
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(
+        new THREE.SphereGeometry(0.65, 12, 12),
+        godzillaGlow
+      );
+      eye.position.set(side * 1.7, 29.4, 8.6);
+      stormMonsterGroup.add(eye);
+
+      const arm = new THREE.Mesh(
+        createGodzillaLimb(1.15, 7.5, 12),
+        godzillaSkin
+      );
+      arm.position.set(side * 6.2, 18.5, 2.2);
+      arm.rotation.z = side * 0.35;
+      arm.rotation.x = -0.35;
+      stormMonsterGroup.add(arm);
+
+      const claw = new THREE.Mesh(
+        new THREE.ConeGeometry(0.55, 1.8, 8),
+        godzillaGlow
+      );
+      claw.position.set(side * 7.4, 13.8, 4.6);
+      claw.rotation.x = Math.PI;
+      stormMonsterGroup.add(claw);
+
+      const leg = new THREE.Mesh(
+        createGodzillaLimb(2.3, 10, 14),
+        godzillaSkin
+      );
+      leg.position.set(side * 3.6, 6.2, 0);
+      stormMonsterGroup.add(leg);
+
+      const foot = new THREE.Mesh(
+        new THREE.BoxGeometry(4.4, 1.5, 6.5),
+        godzillaDark
+      );
+      foot.position.set(side * 3.6, 0.75, 1.4);
+      stormMonsterGroup.add(foot);
+    }
+
+    const godzillaTail = new THREE.Mesh(
+      createGodzillaLimb(1.8, 22, 14),
+      godzillaSkin
+    );
+    godzillaTail.position.set(0, 13, -16);
+    godzillaTail.rotation.x = 0.75;
+    stormMonsterGroup.add(godzillaTail);
+
+    const godzillaTailTip = new THREE.Mesh(
+      new THREE.ConeGeometry(1.1, 5, 10),
+      godzillaGlow
+    );
+    godzillaTailTip.position.set(0, 5.5, -26);
+    godzillaTailTip.rotation.x = -Math.PI / 2;
+    stormMonsterGroup.add(godzillaTailTip);
+
+    const stormLegs = [];
+
+    for (let i = 0; i < 12; i++) {
+      const spike = new THREE.Mesh(
+        new THREE.ConeGeometry(0.75 + Math.random() * 0.45, 3.4 + Math.random() * 2.4, 6),
+        godzillaGlow.clone()
+      );
+
+      const t = i / 11;
+      spike.position.set(0, 24 - t * 16, 1.5 - t * 22);
+      spike.rotation.x = -0.35;
+
+      stormMonsterGroup.add(spike);
+      stormLegs.push(spike);
+    }
+
+    const stormCloud = new THREE.Mesh(
+      new THREE.SphereGeometry(30, 20, 14),
+      new THREE.MeshBasicMaterial({
+        color: 0x041826,
+        transparent: true,
+        opacity: 0.55
+      })
+    );
+    stormCloud.scale.set(1.8, 0.45, 1.3);
+    stormCloud.position.set(0, 42, -6);
+    stormMonsterGroup.add(stormCloud);
+
+    const stormCoreLight = new THREE.PointLight(0x38bdf8, 0, 280);
+    stormCoreLight.position.set(0, 24, 0);
+    stormMonsterGroup.add(stormCoreLight);
+
+    function showStormWarningSequence() {
+      stormWarning.innerHTML = '<div>LA TORMENTA TE HA VISTO</div><small>NO TE DETENGAS</small>';
+      stormWarning.style.display = "block";
+      setTimeout(() => { stormWarning.innerHTML = '<div>CORRE</div><small>ALÉJATE DE LA TORMENTA</small>'; }, 1600);
+      setTimeout(() => { stormWarning.style.display = "none"; }, 3200);
+    }
+
+    function createStormCheckpoint() {
+      stormCheckpoint = { position: cameraRig.position.clone(), yaw: yaw, pitch: pitch, sanity: sanity, stamina: stamina,
+        companions: companions.map((c) => ({ alive: c.alive, position: c.mesh.position.clone(), rotation: c.mesh.rotation.clone() })) };
+    }
+
+    function restartFromCrash() {
+      clearDialogueQueue();
+      isDead = false; isWon = false; crashStarted = false; crashSequenceFinished = false;
+      stage = "SHIP"; shipGroup.visible = true; venusGroup.visible = false; venusAmbient.visible = false;
+      stormEventStarted = false; stormChaseActive = false; stormChaseFinished = false; stormCinematicActive = false;
+      activeCamera = camera; companionLaunched = false; launchedCompanion = null; stormCheckpoint = null;
+      stormAttackTimer = STORM_ATTACK_DELAY; stormLightningTimer = 0; stormProximity = 0; shakeStrength = 0;
+      simmonsEventStarted = false; pickardFarewellStarted = false; pickardSuicideStarted = false; visitedDome1 = false;
+      sanity = 100; stamina = 100; missionTime = 0;
+      updateSanityUI(); updateStaminaUI();
+      companions.forEach((companion) => {
+        companion.alive = true;
+        if (!companion.mesh.parent) scene.add(companion.mesh);
+        companion.mesh.visible = true; companion.mesh.rotation.set(0, 0, 0);
+        companion.mesh.position.copy(companion.shipPosition);
+      });
+      updateCrewUI();
+      stormWarning.style.display = "none"; deathOverlay.style.display = "none";
+      compassArrow.classList.remove("compass-danger");
+      currentObjective = { x: dome1Group.position.x, z: dome1Group.position.z, label: "CÚPULA SOLAR VERDADERA" };
+      retryMissionBtn.innerText = "REINICIAR MISIÓN";
+      retryMissionBtn.onclick = () => location.reload();
+      triggerCrashSequence();
+      if (gameHasStarted && !isWon) { blocker.style.display = "none"; document.body.requestPointerLock(); }
+    }
+
+    function startStormChase() {
+      if (stormEventStarted || stormChaseActive || isDead || isWon) return;
+      stormEventStarted = true; stormChaseActive = true;
+      stormChaseStartZ = cameraRig.position.z; stormAttackTimer = STORM_ATTACK_DELAY;
+      createStormCheckpoint();
+      compassArrow.classList.add("compass-danger");
+      companionLaunched = false;
+      stormMonsterGroup.visible = true;
+      stormMonsterGroup.position.set(cameraRig.position.x + 35, 0, cameraRig.position.z - 105);
+      stormCoreLight.intensity = 9;
+      showStormWarningSequence();
+      setTensionLevel(1); playThunderSound(); playMetalCreak();
+      setObjective("OBJETIVO: CORRE. LA TORMENTA VA POR VARGAS.");
+      setStoryMessage("Las luces azules se abren entre los árboles. La tormenta tiene patas. Todos corren entre la vegetación.");
+      enqueueDialogue({ speaker: "SIMMONS", text: "¡Las brújulas no funcionan! ¡Eso no es una tormenta! ¡Corra, teniente, corra!", rate: 1.18, pitch: 0.72, volume: 1, hints: ["male", "google"], pauseAfter: 150, priority: true });
+    }
+
+    function startVargasDeathCinematic() {
+      if (companionLaunched || stormCinematicActive) return;
+      const victim = companions.find((item) => item.alive && item.name === "Vargas") || companions.find((item) => item.alive) || null;
+      if (!victim) { companionLaunched = true; return; }
+      companionLaunched = true; launchedCompanion = victim; stormCinematicActive = true;
+      victim.alive = false; sanity -= 14; updateSanityUI(); updateCrewUI();
+      moveForward = false; moveBackward = false; moveLeft = false; moveRight = false; isSprinting = false;
+      stormCoreLight.intensity = 12; playThunderSound(); playMetalCreak(); triggerImpactFlash();
+      setStoryMessage("Una pata eléctrica se enrosca alrededor de " + victim.name + ". La tormenta se detiene para observarlo.");
+      const startPos = victim.mesh.position.clone(); const startPosY = startPos.y;
+      const duration = 5.2; let elapsed = 0;
+      const cinematicCamera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 2000);
+      activeCamera = cinematicCamera;
+      function updateVargasDeath(delta) {
+        elapsed += delta;
+        const t = clamp(elapsed / duration, 0, 1);
+        const ease = t * t * (3 - 2 * t);
+        victim.mesh.position.x = startPos.x + (stormMonsterGroup.position.x - startPos.x) * ease;
+        victim.mesh.position.z = startPos.z + (stormMonsterGroup.position.z - startPos.z) * ease;
+        victim.mesh.position.y = startPosY + ease * 26;
+        victim.mesh.rotation.z = ease * 0.35; victim.mesh.rotation.x = ease * 0.18;
+        const focus = victim.mesh.position.clone(); focus.y += 1.4;
+        cinematicCamera.position.copy(focus).add(new THREE.Vector3(14, 9, 16));
+        cinematicCamera.lookAt(focus);
+        stormCoreLight.intensity = 10 + Math.sin(elapsed * 18) * 4;
+        if (t < 1) { requestAnimationFrame(() => updateVargasDeath(1 / 60)); return; }
+        triggerImpactFlash(); playThunderSound(); playDeathSound(); shakeStrength = 0.35;
+        scene.remove(victim.mesh); launchedCompanion = null;
+        setStoryMessage("La tormenta cierra sus patas de luz. Vargas desaparece entre un estallido azul y la lluvia.");
+        enqueueDialogue({ speaker: "TENIENTE", text: "¡No! ¡" + victim.name + "! Maldita sea... Sigan corriendo. ¡No podemos hacer nada!", rate: 1.05, pitch: 0.8, volume: 0.98, hints: ["male", "google"], pauseAfter: 300, priority: true });
+        enqueueDialogue({ speaker: "NARRADOR", text: "La lluvia no dejó ni una marca donde él estuvo. Solo un olor a metal quemado y un silencio que pesaba más que el trueno.", rate: 0.8, pitch: 0.78, volume: 0.9, hints: ["male", "google"], pauseAfter: 700 });
+        setTimeout(() => {
+          stormCinematicActive = false; activeCamera = camera; stormCoreLight.intensity = 8;
+          setObjective("OBJETIVO: CORRE AL NORTE. ALÉJATE DE LA TORMENTA.");
+          setStoryMessage("La tormenta reanuda la persecución. Corre al norte. No te detengas.");
+          stormWarning.innerHTML = '<div>CORRE AL NORTE</div><small>LA TORMENTA SIGUE CERCA · NO TE DETENGAS</small>';
+          stormWarning.style.display = "block";
+        }, 1800);
+      }
+      updateVargasDeath(1 / 60);
+    }
+
+    function updateStormChase(delta) {
+      if (!stormChaseActive || stormCinematicActive || isDead || isWon) return;
+      const playerX = cameraRig.position.x, playerZ = cameraRig.position.z;
+      const dx = playerX - stormMonsterGroup.position.x, dz = playerZ - stormMonsterGroup.position.z;
+      const distanceToStorm = Math.hypot(dx, dz);
+      const chaseSpeed = 8.2;
+      stormMonsterGroup.position.x += (dx / (distanceToStorm || 1)) * chaseSpeed * delta;
+      stormMonsterGroup.position.z += (dz / (distanceToStorm || 1)) * chaseSpeed * delta;
+      stormCloud.position.y = 58 + Math.sin(missionTime * 1.6) * 3;
+      stormCoreLight.intensity = 7 + Math.random() * 8;
+      stormLegs.forEach((leg, index) => { leg.rotation.z = Math.sin(missionTime * 6 + index) * 0.32; leg.rotation.x = Math.cos(missionTime * 5.2 + index) * 0.32; });
+      stormProximity = clamp(1 - distanceToStorm / 95, 0, 1);
+      sanity -= delta * (0.055 + stormProximity * 0.85);
+      updateSanityUI();
+      shakeStrength = Math.max(shakeStrength, stormProximity * 0.5);
+      stormLightningTimer -= delta;
+      if (stormLightningTimer <= 0) { stormLightningTimer = 0.35 + Math.random() * 0.9; playThunderSound(); if (stormProximity > 0.35) { sanity -= 1.5; updateSanityUI(); } }
+      stormAttackTimer -= delta;
+      if (stormAttackTimer <= 0 && !companionLaunched) { startVargasDeathCinematic(); stormAttackTimer = 999; }
+      if (distanceToStorm < 14) { sanity -= delta * 18; updateSanityUI(); shakeStrength = 0.9; if (Math.random() < delta * 2.5) playThunderSound(); }
+      if (distanceToStorm >= SAFE_STORM_DISTANCE && companionLaunched) finishStormChase();
+      if (sanity <= 0) triggerDeath("La tormenta eléctrica te alcanzó. Sus patas de luz descendieron sobre ti y la lluvia borró tu nombre.");
+    }
+
+    function finishStormChase() {
+      stormChaseActive = false;
+      stormChaseFinished = true;
+      compassArrow.classList.remove("compass-danger");
+
+      stormWarning.style.display = "none";
+      stormMonsterGroup.visible = false;
+      stormCoreLight.intensity = 0;
+      shakeStrength = 0;
+      setTensionLevel(0.35);
+
+      currentObjective = {
+        x: dome1Group.position.x,
+        z: dome1Group.position.z,
+        label: "CÚPULA SOLAR VERDADERA"
+      };
+
+      setObjective("OBJETIVO: DIRÍGETE AL NORTE. BUSCA LA CÚPULA SOLAR.");
+      setStoryMessage(
+        "La tormenta se aleja entre la vegetación. Uno menos. La brújula vuelve a responder y señala la cúpula solar."
+      );
+
+      enqueueDialogue({
+        speaker: "NARRADOR",
+        text: "La tormenta no había terminado contigo. Solo había decidido esperar.",
+        rate: 0.78,
+        pitch: 0.8,
+        volume: 0.9,
+        hints: ["male", "google"],
+        pauseAfter: 700
+      });
+    }
+
+    /* ============================================================
+       CINEMÁTICA E INICIO
+    ============================================================ */
+
+    function runCinematicIntro() {
+      cinematicOverlay.style.display = "flex";
+      cinematicOverlay.style.opacity = "1";
+
+      cinematicTitle.innerText = "VENUS";
+      cinematicSubtitle.innerText = "";
+
+      setTimeout(() => {
+        cinematicSubtitle.innerText =
+          "AÑO 2247 · RED DE CÚPULAS SOLARES · EXPEDICIÓN ICARUS-7";
+
+        enqueueDialogue({
+          speaker: "NARRADOR",
+          text: "Venus no fue conquistado. Solo fue encerrado detrás de cúpulas.",
+          rate: 0.84,
+          pitch: 0.82,
+          volume: 0.9,
+          hints: ["male", "google"],
+          pauseAfter: 1000
+        });
+      }, 850);
+
+      setTimeout(() => {
+        cinematicTitle.innerText = "LA LLUVIA";
+
+        cinematicSubtitle.innerText =
+          "FUERA DE LAS CÚPULAS, LA LLUVIA NO CAE. GOLPEA, BORRA Y ESPERA.";
+
+        enqueueDialogue({
+          speaker: "NARRADOR",
+          text: "Fuera de ellas, la lluvia no cae. Golpea, borra y espera.",
+          rate: 0.8,
+          pitch: 0.78,
+          volume: 0.9,
+          hints: ["male", "google"],
+          pauseAfter: 1000
+        });
+      }, 6500);
+
+      setTimeout(() => {
+        cinematicTitle.innerText = "ICARUS-7";
+
+        cinematicSubtitle.innerText =
+          "DESCENSO PROGRAMADO · INTERFERENCIA ELÉCTRICA DETECTADA";
+
+        playRadioStatic();
+
+        enqueueDialogue({
+          speaker: "SISTEMA DE NAVEGACIÓN",
+          text: "Atención, Coronel. Anomalía eléctrica detectada. Los sistemas de navegación requieren verificación manual.",
+          rate: 1.02,
+          pitch: 1.18,
+          volume: 0.8,
+          hints: ["female", "google"],
+          pauseAfter: 800
+        });
+      }, 13000);
+
+      setTimeout(() => {
+        cinematicOverlay.style.opacity = "0";
+
+        setTimeout(() => {
+          cinematicOverlay.style.display = "none";
+
+          setStoryMessage(
+            "[ICARUS-7 · DESCENSO A VENUS] Despierta, Coronel. Ve al puente de mando y verifica la consola de navegación."
+          );
+
+          enqueueDialogue({
+            speaker: "SIMMONS",
+            text: "Coronel, me alegra verlo despierto. El puente está al fondo del pasillo. Algo no está bien ahí afuera.",
+            rate: 0.96,
+            pitch: 0.76,
+            volume: 0.85,
+            hints: ["male", "jorge", "google"],
+            pauseAfter: 500
+          });
+        }, 1200);
+      }, 19500);
+    }
+
+    function startGame() {
+      initAudio();
+      resumeAudio();
+
+      startShipAmbience();
+      startShipMusic();
+
+      introScreen.classList.add("hidden");
+      pauseScreen.classList.add("hidden");
+
+      setTimeout(() => {
+        blocker.style.display = "none";
+        gameHasStarted = true;
+
+        document.body.requestPointerLock();
+
+        setObjective("OBJETIVO: DIRÍGETE AL PUENTE DE MANDO.");
+
+        runCinematicIntro();
+      }, 650);
+    }
+
+    startGameBtn.addEventListener("click", startGame);
+
+    resumeGameBtn.addEventListener("click", () => {
+      pauseScreen.classList.add("hidden");
+      blocker.style.display = "none";
+      document.body.requestPointerLock();
+    });
+
+    /* ============================================================
+       CONTROLES
+    ============================================================ */
+
+    document.addEventListener("pointerlockchange", () => {
+      if (document.pointerLockElement === document.body) {
+        isLocked = true;
+        blocker.style.display = "none";
+        resumeAudio();
+      } else {
+        isLocked = false;
+
+        if (
+          gameHasStarted &&
+          !isDead &&
+          !isWon &&
+          !crashStarted
+        ) {
+          blocker.style.display = "flex";
+
+          loadingScreen.classList.add("hidden");
+          introScreen.classList.add("hidden");
+          pauseScreen.classList.remove("hidden");
+        }
+      }
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (!isLocked || isDead || isWon) return;
+
+      yaw -= event.movementX * 0.002;
+      pitch -= event.movementY * 0.002;
+
+      pitch = clamp(
+        pitch,
+        -Math.PI / 2.5,
+        Math.PI / 2.5
+      );
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "KeyW") moveForward = true;
+      if (event.code === "KeyS") moveBackward = true;
+      if (event.code === "KeyA") moveLeft = true;
+      if (event.code === "KeyD") moveRight = true;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") isSprinting = true;
+      if (event.code === "KeyE") handleInteraction();
+    });
+
+    document.addEventListener("keyup", (event) => {
+      if (event.code === "KeyW") moveForward = false;
+      if (event.code === "KeyS") moveBackward = false;
+      if (event.code === "KeyA") moveLeft = false;
+      if (event.code === "KeyD") moveRight = false;
+      if (event.code === "ShiftLeft" || event.code === "ShiftRight") isSprinting = false;
+    });
+
+    function handleInteraction() {
+      if (!isLocked || isDead || isWon) return;
+
+      if (stage === "SHIP" && !crashStarted) {
+        const distance =
+          cameraRig.position.distanceTo(navConsolePosition);
+
+        if (distance < 4.1) {
+          triggerCrashSequence();
+        }
+      }
+    }
+
+    /* ============================================================
+       ACCIDENTE Y TRANSICIÓN
+    ============================================================ */
+
+    function triggerCrashSequence() {
+      if (crashStarted) return;
+      crashStarted = true;
+      crashSequenceFinished = false;
+      stage = "CRASH";
+      interactionPrompt.style.display = "none";
+      crashWarning.style.display = "none";
+      moveForward = moveBackward = moveLeft = moveRight = false;
+      isSprinting = false;
+      setObjective("EMERGENCIA: MANTÉN LA NAVE ESTABLE.");
+      setStoryMessage("¡ALERTA CRÍTICA! La Icarus-7 pierde navegación durante el descenso. La tormenta eléctrica está atravesando el casco.");
+      fadeShipAmbience();
+      fadeOutShipMusic();
+      startTensionMusic();
+      setTensionLevel(0.82);
+      playThunderSound();
+      playMetalCreak();
+      shakeStrength = 0.12;
+      let crashTime = 0;
+      let firstDialogue = false, secondDialogue = false, warningDisplayed = false, explosionTriggered = false;
+      const crashInterval = setInterval(() => {
+        crashTime += 0.1;
+        shakeStrength = Math.min(0.55, 0.08 + crashTime * 0.035);
+        alarmLight.intensity = 2 + Math.random() * 8;
+        shipLights.forEach((light) => {
+          light.color.setHex(Math.random() > 0.35 ? 0xef4444 : 0x60a5fa);
+          light.intensity = 0.4 + Math.random() * 2.5;
+        });
+        shipConsoleLights.forEach((mesh) => {
+          if (mesh.material.emissive) mesh.material.emissive.setHex(Math.random() > 0.4 ? 0xef4444 : 0x0ea5e9);
+        });
+        if (crashTime > 1.2 && !firstDialogue) {
+          firstDialogue = true;
+          enqueueDialogue({ speaker: "PICKARD", text: "¡Los estabilizadores están fallando! ¡La tormenta está interfiriendo con todos los instrumentos!", rate: 1.08, pitch: 1.18, volume: 0.96, hints: ["female", "google"], pauseAfter: 450, priority: true });
+        }
+        if (crashTime > 5.5 && !secondDialogue) {
+          secondDialogue = true;
+          setStoryMessage("Simmons: ¡No responde el timón! Pickard: ¡La presión externa está rompiendo los estabilizadores!");
+          enqueueDialogue({ speaker: "SIMMONS", text: "No responde el timón. Estamos perdiendo altura. Coronel, el casco no aguantará mucho más.", rate: 1.02, pitch: 0.72, volume: 0.96, hints: ["male", "google"], pauseAfter: 400 });
+          playMetalCreak();
+        }
+        if (crashTime > 10 && !warningDisplayed) {
+          warningDisplayed = true;
+          crashWarning.style.display = "block";
+          setStoryMessage("IMPACTO INMINENTE. TODOS A SUS PUESTOS.");
+          enqueueDialogue({ speaker: "SIMMONS", text: "¡Sujétense! ¡Vamos a entrar demasiado rápido!", rate: 1.14, pitch: 0.7, volume: 1, hints: ["male", "google"], pauseAfter: 250, priority: true });
+          playThunderSound();
+          setTensionLevel(1);
+        }
+        if (crashTime > 14 && !explosionTriggered) {
+          explosionTriggered = true;
+          crashWarning.style.display = "none";
+          setStoryMessage("IMPACTO.");
+          triggerImpactFlash();
+          playExplosionSound();
+          playThunderSound();
+          shakeStrength = 1.4;
+          cameraRig.position.y = 0.2;
+        }
+        if (crashTime > 17) {
+          clearInterval(crashInterval);
+          crashSequenceFinished = true;
+          setTimeout(transitionToVenus, 900);
+        }
+      }, 100);
+    }
+
+
+    function transitionToVenus() {
+      shipGroup.visible = false;
+      venusGroup.visible = true;
+      venusAmbient.visible = true;
+      crashWarning.style.display = "none";
+      impactFlash.style.opacity = "0";
+      companions.forEach((companion) => scene.attach(companion.mesh));
+      stage = "VENUS";
+      alarmLight.intensity = 0;
+      yaw = 0;
+      pitch = 0;
+      cameraRig.position.set(0, 0, 0);
+      cameraRig.rotation.set(0, 0, 0);
+      camera.position.set(0, 1.7, 0);
+      camera.rotation.set(0, 0, 0);
+      shakeStrength = 0;
+      moveForward = moveBackward = moveLeft = moveRight = false;
+      isSprinting = false;
+      characterStatus.innerText = "CORDURA DEL TENIENTE:";
+      setObjective("OBJETIVO: DIRÍGETE AL NORTE. ENCUENTRA UNA CÚPULA SOLAR.");
+      setStoryMessage("La nave se estrelló. El coronel no responde. Ahora eres el teniente. Venus te recibe con una lluvia que no deja de caer.");
+      startRainSound();
+      setRainVolume(0.16);
+      startVenusAmbienceMusic();
+      startTensionMusic();
+      setTensionLevel(0.18);
+      companions[0].mesh.position.set(-1.2, 0, 3.5);
+      companions[1].mesh.position.set(1.2, 0, 5.5);
+      companions[2].mesh.position.set(0, 0, 7.5);
+
+      currentObjective = {
+        x: dome1Group.position.x,
+        z: dome1Group.position.z,
+        label: "CÚPULA SOLAR VERDADERA"
+      };
+      setTimeout(() => {
+        enqueueDialogue({ speaker: "TENIENTE", text: "¿Simmons? ¿Pickard? Si alguien puede oírme, manténgase cerca. Tenemos que encontrar una cúpula solar.", rate: 0.9, pitch: 0.82, volume: 0.86, hints: ["male", "google"], pauseAfter: 500 });
+      }, 1500);
+      setTimeout(() => {
+        crashStarted = false;
+        crashSequenceFinished = true;
+      }, 1800);
+    }
+
+
+    /* ============================================================
+       MUERTE Y VICTORIA
+    ============================================================ */
+
+    function triggerDeath(reason) {
+      if (isDead || isWon) return;
+
+      isDead = true;
+
+      moveForward = false;
+      moveBackward = false;
+      moveLeft = false;
+      moveRight = false;
+
+      clearDialogueQueue();
+
+      document.exitPointerLock();
+      playDeathSound();
+
+      deathCause.innerText = reason;
+      retryMissionBtn.innerText = "REINICIAR MISIÓN";
+      retryMissionBtn.onclick = () => location.reload();
+      deathOverlay.style.display = "flex";
+
+      let elapsed = 0;
+
+      function fall() {
+        elapsed += 0.016;
+
+        if (elapsed < 3) {
+          camera.position.y = Math.max(
+            0.2,
+            1.7 - elapsed * 0.54
+          );
+
+          cameraRig.rotation.z =
+            Math.sin(elapsed * 20) * 0.28;
+
+          requestAnimationFrame(fall);
+        }
+      }
+
+      fall();
+    }
+
+    function triggerVictory() {
+      if (isWon || isDead) return;
+
+      isWon = true;
+
+      moveForward = false;
+      moveBackward = false;
+      moveLeft = false;
+      moveRight = false;
+
+      setRainVolume(0.01);
+
+      setObjective("REFUGIO ALCANZADO.");
+
+      setStoryMessage(
+        "La puerta se cierra. La lluvia queda afuera."
+      );
+
+      enqueueDialogue({
+        speaker: "NARRADOR",
+        text: "La puerta se cierra. Por primera vez, la lluvia es solo un recuerdo.",
+        rate: 0.78,
+        pitch: 0.82,
+        volume: 0.9,
+        hints: ["male", "google"],
+        pauseAfter: 0
+      });
+
+      victoryOverlay.style.display = "flex";
+
+      document.exitPointerLock();
+    }
+
+    /* ============================================================
+       LÓGICA DE JUEGO
+    ============================================================ */
+
+    function updateFootsteps(delta, moving) {
+      if (!moving || !isLocked || isDead || isWon) {
+        footstepTimer = 0;
+        return;
+      }
+      footstepTimer -= delta;
+      if (footstepTimer <= 0) {
+        playFootstep(stage === "VENUS" ? "mud" : "metal");
+        const sprintStep = isSprinting && stamina > 0.5 && stage !== "CRASH";
+        footstepTimer = sprintStep ? 0.28 : (stage === "VENUS" ? 0.48 : 0.4);
+      }
+    }
+
+
+    function updateShip(delta) {
+      alarmTimer += delta;
+
+      if (alarmTimer > 3.3 && !crashStarted) {
+        playAlarmSound();
+        alarmTimer = 0;
+      }
+
+      if (Math.random() < delta * 0.12) {
+        playMetalCreak();
+      }
+
+      const distance =
+        cameraRig.position.distanceTo(navConsolePosition);
+
+      interactionPrompt.style.display =
+        distance < 4.1 && !crashStarted && isLocked
+          ? "block"
+          : "none";
+
+      companions.forEach((companion) => {
+        companion.mesh.position.copy(companion.shipPosition);
+      });
+
+      venusView.rotation.y += delta * 0.015;
+      atmosphereCloud.rotation.y -= delta * 0.01;
+    }
+
+    function updateCompanions(delta) {
+      companions.forEach((companion) => {
+        if (!companion.alive) return;
+
+        const targetX =
+          cameraRig.position.x + companion.followOffset.x;
+
+        const targetZ =
+          cameraRig.position.z + companion.followOffset.z;
+
+        const followSpeed = 1.7 * delta;
+
+        companion.mesh.position.x +=
+          (targetX - companion.mesh.position.x) *
+          followSpeed;
+
+        companion.mesh.position.z +=
+          (targetZ - companion.mesh.position.z) *
+          followSpeed;
+
+        companion.mesh.position.y = 0;
+
+        companion.mesh.lookAt(
+          cameraRig.position.x,
+          0,
+          cameraRig.position.z
+        );
+      });
+    }
+
+    function removeCompanion(index) {
+      if (!companions[index].alive) return;
+
+      companions[index].alive = false;
+      scene.remove(companions[index].mesh);
+    }
+
+    function updateVenus(delta) {
+      missionTime += delta;
+
+      sanity -= delta * 0.085;
+
+      updateSanityUI();
+      updateCrewUI();
+      updateCompanions(delta);
+      updateHallucinations(delta);
+      updateCompass();
+
+      setTensionLevel((100 - sanity) / 100);
+
+      const x = cameraRig.position.x;
+      const z = cameraRig.position.z;
+
+      thunderTimer -= delta;
+
+      if (thunderTimer <= 0) {
+        thunderTimer = 8 + Math.random() * 12;
+
+        if (Math.random() > 0.35) {
+          lightningLight.intensity = 18;
+
+          playThunderSound();
+
+          setTimeout(() => {
+            lightningLight.intensity = 0;
+          }, 120);
+        }
+      }
+
+      if (
+        distance2D(x, z, dome1Group.position.x, dome1Group.position.z) < FALSE_DOME_TRIGGER_DISTANCE &&
+        !simmonsEventStarted && companions[0].alive && !stormChaseActive
+      ) {
+        startSimmonsDeathCinematic();
+      }
+
+      if (
+        distance2D(x, z, dome1Group.position.x, dome1Group.position.z) < FALSE_DOME_ARRIVAL_DISTANCE &&
+        !pickardSuicideStarted && companions[1].alive && !stormChaseActive
+      ) {
+        startPickardDeathCinematic();
+      }
+
+      if (
+        distance2D(x, z, 0, -90) < 55 &&
+        !stormEventStarted
+      ) {
+        startStormChase();
+      }
+
+      if (distance2D(x, z, currentObjective.x, currentObjective.z) < 70) {
+        sanity += delta * 4;
+      }
+
+            if (sanity <= 0) {
+        triggerDeath(
+          stormChaseActive
+            ? "La tormenta eléctrica te alcanzó. Sus patas de luz descendieron sobre ti y la lluvia borró tu nombre."
+            : "Tus tímpanos colapsaron bajo el estruendo de las gotas. Caíste de rodillas y Venus terminó de ahogarte."
+        );
+      }
+
+      if (sanity < 40) {
+        const insanity = (40 - sanity) / 40;
+
+        scene.fog.density =
+          0.014 + insanity * 0.042;
+
+        setRainVolume(0.16 + insanity * 0.12);
+      } else {
+        scene.fog.density = 0.014;
+        if (!enteredFinalDome) setRainVolume(0.16);
+      }
+
+      cameraRig.position.x = clamp(
+        cameraRig.position.x,
+        -1150,
+        1150
+      );
+
+      cameraRig.position.z = clamp(
+        cameraRig.position.z,
+        -3600,
+        40
+      );
+    }
+
+    function updateRain(delta) {
+      const positions = rainGeo.attributes.position.array;
+      const speed = 58 * delta;
+
+      for (let i = 1; i < rainCount * 3; i += 3) {
+        positions[i] -= speed;
+
+        if (positions[i] < 0) {
+          positions[i] =
+            56 + Math.random() * 8;
+        }
+      }
+
+      rainGeo.attributes.position.needsUpdate = true;
+
+      rainSystem.position.set(
+        cameraRig.position.x,
+        0,
+        cameraRig.position.z
+      );
+    }
+
+    function updateCameraEffects() {
+      cameraRig.rotation.order = "YXZ";
+      let roll = 0;
+      if (stage === "CRASH") {
+        roll = Math.sin(performance.now() * 0.025) * 0.12;
+      } else if (stage === "VENUS" && sanity < 40) {
+        const insanity = (40 - sanity) / 40;
+        roll = Math.sin(missionTime * 3.2) * insanity * 0.075;
+      }
+      cameraRig.rotation.set(pitch, yaw, roll);
+      if (shakeStrength > 0.001) {
+        camera.position.x = (Math.random() - 0.5) * shakeStrength;
+        camera.position.y = 1.7 + (Math.random() - 0.5) * shakeStrength;
+        camera.position.z = (Math.random() - 0.5) * shakeStrength;
+      } else {
+        camera.position.set(0, 1.7, 0);
+      }
+    }
+
+
+    function updateCinematicFocus() {
+      if (!cinematicFocusTarget) return;
+
+      const focusPosition = new THREE.Vector3();
+      cinematicFocusTarget.getWorldPosition(focusPosition);
+      camera.lookAt(focusPosition);
+    }
+
+    function movePlayer(delta) {
+      if (!isLocked || isDead || isWon) return;
+      const direction = new THREE.Vector3();
+      if (moveForward) direction.z -= 1;
+      if (moveBackward) direction.z += 1;
+      if (moveLeft) direction.x -= 1;
+      if (moveRight) direction.x += 1;
+      const moving = direction.lengthSq() > 0;
+      const canSprint = stage !== "CRASH" && moving && isSprinting && stamina > 0.5;
+      updateFootsteps(delta, moving);
+      if (!moving) {
+        stamina += delta * 18;
+        updateStaminaUI();
+        return;
+      }
+      if (canSprint) stamina -= delta * 7;
+      else stamina += delta * 24;
+      stamina = clamp(stamina, 0, 100);
+      updateStaminaUI();
+      direction.normalize();
+      direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      let speed = stage === "VENUS" ? 7.2 : 5.2;
+      if (stage === "VENUS" && canSprint) speed = 11.8;
+      if (stage === "SHIP" && canSprint) speed = 7.6;
+      if (stage === "CRASH") speed = 0;
+      cameraRig.position.addScaledVector(direction, speed * delta);
+      if (stage === "SHIP") {
+        cameraRig.position.x = clamp(cameraRig.position.x, -4.4, 4.4);
+        cameraRig.position.z = clamp(cameraRig.position.z, -35.1, 5.1);
+      }
+    }
+
+
+    /* ============================================================
+       CARGA Y BUCLE PRINCIPAL
+    ============================================================ */
+
+    function runLoadingSequence() {
+      const messages = [
+        "ESTABLECIENDO ENLACE CON LA NAVE...",
+        "CALIBRANDO NAVEGACIÓN PLANETARIA...",
+        "CARGANDO MAPA ATMOSFÉRICO DE VENUS...",
+        "VERIFICANDO CÚPULAS SOLARES...",
+        "ADVERTENCIA: ACTIVIDAD ELÉCTRICA ANÓMALA...",
+        "ARCHIVO DE MISIÓN DISPONIBLE."
+      ];
+
+      let progress = 0;
+      let lastIndex = -1;
+
+      const interval = setInterval(() => {
+        progress = Math.min(
+          progress + Math.random() * 7 + 3,
+          100
+        );
+
+        loadingProgress.style.width =
+          progress + "%";
+
+        const index = Math.min(
+          messages.length - 1,
+          Math.floor(
+            (progress / 100) * messages.length
+          )
+        );
+
+        if (index !== lastIndex) {
+          lastIndex = index;
+          loadingText.innerText = messages[index];
+        }
+
+        if (progress >= 100) {
+          clearInterval(interval);
+
+          setTimeout(() => {
+            loadingScreen.classList.add("hidden");
+            introScreen.classList.remove("hidden");
+          }, 850);
+        }
+      }, 240);
+    }
+
+    
+    function updateFinalDome(delta) {
+      if (stage !== "VENUS" || isDead || isWon) return;
+
+      const distanceToDome = distance2D(
+        cameraRig.position.x,
+        cameraRig.position.z,
+        domeFinalGroup.position.x,
+        domeFinalGroup.position.z
+      );
+
+      const insideDome = distanceToDome < 30;
+
+      if (
+        distanceToDome < 52 &&
+        !insideDome &&
+        !enteredFinalDome &&
+        !finalDomeApproachDialogueStarted &&
+        !stormChaseActive &&
+        !stormCinematicActive
+      ) {
+        finalDomeApproachDialogueStarted = true;
+
+        setObjective("OBJETIVO: ENTRA EN LA CÚPULA SOLAR.");
+        setStoryMessage("La cúpula solar verdadera está frente a ti. La abertura sigue iluminada entre la lluvia.");
+
+        enqueueDialogue({
+          speaker: "TENIENTE",
+          text: "Ahí está... La cúpula solar. Tengo que entrar. No puedo quedarme aquí afuera.",
+          rate: 0.88, pitch: 0.82, volume: 0.95,
+          hints: ["male", "google"], pauseAfter: 500, priority: true
+        });
+      }
+
+      if (insideDome && !enteredFinalDome) {
+        enteredFinalDome = true;
+        setRainVolume(0.001);
+        setTensionLevel(0);
+        shakeStrength = 0;
+
+        setObjective("OBJETIVO: DESCANSA. ESTÁS DENTRO DE LA CÚPULA SOLAR.");
+        setStoryMessage("Cruzaste la puerta. La lluvia queda afuera. Dentro solo hay luz cálida y silencio.");
+
+        if (!finalDomeDialogueStarted) {
+          finalDomeDialogueStarted = true;
+
+          enqueueDialogue({
+            speaker: "TENIENTE",
+            text: "Por fin... No oigo la lluvia. No oigo nada más que el silencio. Dios, pensé que nunca íbamos a llegar.",
+            rate: 0.86, pitch: 0.82, volume: 0.95,
+            hints: ["male", "google"], pauseAfter: 900, priority: true
+          });
+
+          enqueueDialogue({
+            speaker: "TENIENTE",
+            text: "Estoy vivo. Todavía estoy vivo. Esta luz... se siente casi como casa.",
+            rate: 0.84, pitch: 0.85, volume: 0.95,
+            hints: ["male", "google"], pauseAfter: 1200, priority: true
+          });
+
+          setTimeout(() => { triggerVictory(); }, 11000);
+        }
+      }
+
+      if (!insideDome && enteredFinalDome) {
+        enteredFinalDome = false;
+        setRainVolume(0.16);
+        setTensionLevel(0.35);
+        setObjective("OBJETIVO: DIRÍGETE AL NORTE. VUELVE A ENTRAR EN LA CÚPULA SOLAR.");
+        setStoryMessage("La lluvia vuelve a golpear tu casco en cuanto sales de la cúpula.");
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.05);
+      if (stormCinematicActive) {
+        updateRain(delta);
+        updateCompass();
+        renderer.render(scene, activeCamera || camera);
+        return;
+      }
+      movePlayer(delta);
+      updateCameraEffects();
+      updateCinematicFocus();
+      if (!isDead && !isWon) {
+        if (stage === "SHIP") updateShip(delta);
+        if (stage === "VENUS") {
+          updateVenus(delta);
+          updateRain(delta);
+          updateStormChase(delta);
+          updateFinalDome(delta);
+          updateCompass();
+        }
+      }
+      renderer.render(scene, activeCamera || camera);
+    }
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      if (activeCamera && activeCamera !== camera) {
+        activeCamera.aspect = window.innerWidth / window.innerHeight;
+        activeCamera.updateProjectionMatrix();
+      }
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateSanityUI();
+    updateStaminaUI();
+
+    try {
+      runLoadingSequence();
+      animate();
+    } catch (error) {
+      console.error("Error al iniciar LA LLUVIA:", error);
+
+      loadingText.innerText =
+        "ERROR AL INICIAR EL MOTOR 3D. REVISa LA CONSOLA DEL NAVEGADOR.";
+      loadingText.style.color = "#fca5a5";
+    }
+  </script>
+</body>
+</html>
